@@ -1,0 +1,21 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-sans: 'Inter', sans-serif;
+    --font-serif: 'Merriweather', serif;
+
+    --color-primary-50: #fff1e8;
+    --color-primary-100: #ffd9c2;
+    --color-primary-500: #ff6600;
+    --color-primary-600: #e65c00;
+    --color-primary-700: #cc5200;
+
+    --color-secondary-50: #ecf5ff;
+    --color-secondary-100: #d9ecff;
+    --color-secondary-500: #409eff;
+    --color-secondary-600: #2f89eb;
+    --color-secondary-700: #2677d1;
+}

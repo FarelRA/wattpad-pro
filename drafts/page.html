@@ -1,0 +1,1840 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wattpad Story Fetcher</title>
+    <!-- Turndown library for HTML to Markdown -->
+    <script src="https://unpkg.com/turndown/dist/turndown.js"></script>
+    <style>
+      /* --- Base Variables --- */
+      :root {
+        --primary-color: #ff6600; /* Wattpad orange */
+        --primary-hover-color: #e65c00;
+        --primary-active-color: #cc5200;
+        --border-radius: 8px;
+        --transition-speed: 0.2s ease;
+        --shadow-opacity-light: 0.08;
+        --shadow-opacity-dark: 0.25;
+        --spinner-size: 1em;
+      }
+
+      /* --- Light Mode --- */
+      html[data-theme='light'] {
+        --bg-color: #f4f5f7; /* Lighter gray */
+        --text-color: #2c3e50; /* Dark blue-gray */
+        --secondary-bg-color: #ffffff;
+        --input-bg-color: #ffffff;
+        --input-border-color: #dcdfe6;
+        --input-focus-border-color: var(--primary-color);
+        --heading-color: #34495e; /* Slightly darker blue-gray */
+        --subtle-text-color: #8492a6;
+        --button-text-color: #ffffff;
+        --link-color: var(--primary-color);
+        --separator-color: #e4e7ed;
+        --shadow-color: rgba(44, 62, 80, var(--shadow-opacity-light));
+        --error-bg: #fef0f0;
+        --error-text: #f56c6c;
+        --error-border: #fde2e2;
+        --success-bg: #f0f9eb;
+        --success-text: #67c23a;
+        --success-border: #e1f3d8;
+        --info-bg: #f4f4f5;
+        --info-text: #909399;
+        --info-border: #e9e9eb;
+        --theme-toggle-bg: #e9ecef;
+        --theme-toggle-hover-bg: #ced4da;
+        --placeholder-text-color: #aab0c4;
+        --card-bg: #ffffff;
+        --card-border: #e4e7ed;
+        --tag-bg: #ecf5ff;
+        --tag-text: #409eff;
+        --tag-border: #d9ecff;
+      }
+
+      /* --- Dark Mode (Now Default) --- */
+      html[data-theme='dark'] {
+        --bg-color: #1c1e21;
+        --text-color: #e4e6eb;
+        --secondary-bg-color: #242526;
+        --input-bg-color: #3a3b3c;
+        --input-border-color: #4b4d4f;
+        --input-focus-border-color: var(--primary-color);
+        --heading-color: #ccd0d5;
+        --subtle-text-color: #a0a3a8;
+        --link-color: #ff8c4f; /* Lighter orange for dark mode */
+        --separator-color: #3e4042;
+        --shadow-color: rgba(0, 0, 0, var(--shadow-opacity-dark));
+        --error-bg: #3a2a2a;
+        --error-text: #f2aaaa;
+        --error-border: #5a3a3a;
+        --success-bg: #2a4a2a;
+        --success-text: #aaffee;
+        --success-border: #4a8a4a;
+        --info-bg: #3a3a3a;
+        --info-text: #b0b3b8;
+        --info-border: #555;
+        --theme-toggle-bg: #3a3b3c;
+        --theme-toggle-hover-bg: #4e4f50;
+        --placeholder-text-color: #6a6d71;
+        --card-bg: #2d2e2f;
+        --card-border: #3e4042;
+        --tag-bg: #2a3a4a;
+        --tag-text: #73b4ff;
+        --tag-border: #3a5a7a;
+      }
+
+      /* --- Global Styles --- */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji',
+          'Segoe UI Emoji';
+        line-height: 1.6;
+        color: var(--text-color);
+        background-color: var(--bg-color);
+        margin: 0;
+        padding: 25px;
+        transition:
+          background-color var(--transition-speed),
+          color var(--transition-speed);
+      }
+
+      .container {
+        max-width: 900px;
+        margin: 20px auto;
+        background-color: var(--secondary-bg-color);
+        padding: 35px 40px;
+        border-radius: var(--border-radius);
+        box-shadow: 0 5px 20px var(--shadow-color);
+        transition: background-color var(--transition-speed);
+      }
+
+      /* --- Typography --- */
+      h1,
+      h2,
+      h3,
+      h4 {
+        color: var(--heading-color);
+      }
+      h1 {
+        margin-top: 0;
+        text-align: center;
+        color: var(--primary-color);
+      }
+      h2 {
+        padding-bottom: 0.4em;
+        border-bottom: 1px solid var(--separator-color);
+      }
+      h3 {
+        font-size: 1.35em;
+      }
+      h4 {
+        font-size: 1.15em;
+      }
+      a {
+        color: var(--link-color);
+        text-decoration: none;
+        transition: color var(--transition-speed);
+      }
+      a:hover {
+        text-decoration: underline;
+        color: var(--primary-hover-color);
+      }
+      p {
+        margin-bottom: 1em;
+      }
+      hr {
+        border: none;
+        border-top: 1px solid var(--separator-color);
+        margin: 25px 0;
+      }
+
+      /* --- Sections & Layout --- */
+      .input-controls {
+        margin-bottom: 25px;
+      } /* Renamed from main-controls */
+      .action-buttons {
+        padding-top: 25px;
+        border-top: 1px solid var(--separator-color);
+        margin-top: 25px;
+      }
+      .output-section {
+        margin-top: 25px;
+      }
+      .button-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+      }
+      .chapter-selection-controls {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+        padding: 15px;
+        background-color: var(--bg-color);
+        border-radius: var(--border-radius);
+        border: 1px solid var(--card-border);
+      }
+
+      /* --- Forms & Inputs --- */
+      .input-group {
+        margin-bottom: 20px;
+      }
+      .input-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: var(--subtle-text-color);
+        font-size: 0.9em;
+      }
+      .input-group input[type='text'] {
+        padding: 12px 15px;
+        border: 1px solid var(--input-border-color);
+        border-radius: var(--border-radius);
+        font-size: 1em;
+        width: 100%;
+        background-color: var(--input-bg-color);
+        color: var(--text-color);
+        transition:
+          border-color var(--transition-speed),
+          background-color var(--transition-speed),
+          box-shadow var(--transition-speed);
+      }
+      .input-group input[type='text']:focus {
+        outline: none;
+        border-color: var(--input-focus-border-color);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 15%, transparent);
+      }
+      .input-group input[type='text']::placeholder {
+        color: var(--placeholder-text-color);
+      }
+      .chapter-selection-controls label {
+        margin-bottom: 0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        font-size: 0.9em;
+      }
+      .chapter-selection-controls input[type='checkbox'] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--primary-color);
+      }
+      .chapter-selection-controls input[type='text'] {
+        padding: 8px 12px;
+        width: 220px;
+        font-size: 0.9em;
+      }
+
+      /* --- Buttons --- */
+      button {
+        background-color: var(--primary-color);
+        color: var(--button-text-color);
+        border: none;
+        padding: 10px 20px;
+        border-radius: var(--border-radius);
+        cursor: pointer;
+        font-size: 0.95em;
+        font-weight: 500;
+        transition:
+          background-color var(--transition-speed),
+          transform var(--transition-speed),
+          opacity var(--transition-speed);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        line-height: 1.4;
+        white-space: nowrap;
+      }
+      button:hover:not(:disabled) {
+        background-color: var(--primary-hover-color);
+        transform: translateY(-1px);
+      }
+      button:active:not(:disabled) {
+        background-color: var(--primary-active-color);
+        transform: translateY(0px);
+      }
+      button:disabled {
+        background-color: #a0aec0;
+        cursor: not-allowed;
+        opacity: 0.7;
+      }
+      button .spinner {
+        display: none;
+      } /* Hide spinner by default */
+      button.loading .spinner {
+        display: inline-block;
+      } /* Show spinner when loading */
+      button.loading span:not(.spinner) {
+        margin-left: 5px;
+      } /* Add space between spinner and text */
+      .chapter-selection-controls button {
+        padding: 6px 14px;
+        font-size: 0.85em;
+        background-color: var(--info-bg);
+        color: var(--info-text);
+        border: 1px solid var(--info-border);
+      }
+      .chapter-selection-controls button:hover:not(:disabled) {
+        background-color: color-mix(in srgb, var(--info-bg) 85%, black);
+        transform: none;
+      }
+      .chapter-selection-controls button:active:not(:disabled) {
+        background-color: color-mix(in srgb, var(--info-bg) 75%, black);
+      }
+      #theme-toggle {
+        background-color: var(--theme-toggle-bg);
+        color: var(--text-color);
+        margin-left: auto;
+        font-size: 1.1em;
+        padding: 8px 12px;
+        line-height: 1;
+      }
+      #theme-toggle:hover {
+        background-color: var(--theme-toggle-hover-bg);
+      }
+
+      /* --- Status Messages --- */
+      #status {
+        margin: 20px 0;
+        padding: 14px 18px;
+        border-radius: var(--border-radius);
+        font-weight: 500;
+        border: 1px solid transparent;
+        display: none;
+      }
+      #status.error {
+        background-color: var(--error-bg);
+        color: var(--error-text);
+        border-color: var(--error-border);
+      }
+      #status.success {
+        background-color: var(--success-bg);
+        color: var(--success-text);
+        border-color: var(--success-border);
+      }
+      #status.info {
+        background-color: var(--info-bg);
+        color: var(--info-text);
+        border-color: var(--info-border);
+      }
+
+      /* --- Metadata Display --- */
+      #metadata-display {
+        background-color: transparent;
+        border: none;
+        padding: 0;
+        border-radius: 0;
+      } /* Removed card style */
+      #metadata-display .metadata-header {
+        display: flex;
+        gap: 25px;
+        align-items: center;
+        margin-bottom: 25px;
+      } /* Centered items */
+      #metadata-display .cover-image-wrapper {
+        flex-shrink: 0;
+      }
+      #metadata-display .cover-image {
+        max-width: 150px;
+        height: auto;
+        border-radius: var(--border-radius);
+        border: 1px solid var(--card-border);
+        display: block;
+      } /* Ensure it's a block */
+      #metadata-display .metadata-info {
+        flex-grow: 1;
+      } /* Allow text to take space */
+      #metadata-display .metadata-info h3 {
+        margin-top: 0;
+        margin-bottom: 0.5em;
+        font-size: 1.5em;
+      }
+      #metadata-display .author-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 15px;
+        color: var(--subtle-text-color);
+        font-size: 0.95em;
+      }
+      #metadata-display .author-avatar {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        border: 1px solid var(--card-border);
+        object-fit: cover;
+      }
+      #metadata-display .description-text {
+        /* Moved outside header, no box */
+        white-space: pre-wrap;
+        font-size: 0.95em;
+        line-height: 1.6;
+        margin-bottom: 1.5em;
+        margin-top: 0.5em; /* Space after heading */
+      }
+      #metadata-display .metadata-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 15px;
+        font-size: 0.9em;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid var(--separator-color);
+      }
+      #metadata-display .detail-item span:first-child {
+        font-weight: 600;
+        color: var(--subtle-text-color);
+        display: block;
+        margin-bottom: 3px;
+      }
+      #metadata-display .tags-container {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid var(--separator-color);
+      }
+      #metadata-display .tag-item {
+        display: inline-block;
+        background-color: var(--tag-bg);
+        color: var(--tag-text);
+        border: 1px solid var(--tag-border);
+        padding: 3px 10px;
+        border-radius: 15px;
+        margin: 3px;
+        font-size: 0.85em;
+      }
+
+      /* --- Chapter Selection List (Now in Input Area) --- */
+      #chapter-list-container {
+        margin-top: 25px;
+      }
+      #chapter-list {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+        max-height: 450px;
+        overflow-y: auto;
+        border: 1px solid var(--card-border);
+        border-radius: var(--border-radius);
+        padding: 10px;
+        background-color: var(--bg-color);
+      }
+      #chapter-list li {
+        background-color: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: var(--border-radius);
+        padding: 12px 18px;
+        margin-bottom: 8px;
+        transition: background-color var(--transition-speed);
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+      #chapter-list li:last-child {
+        margin-bottom: 0;
+      }
+      #chapter-list li:hover {
+        background-color: var(--secondary-bg-color);
+      }
+      .chapter-item-checkbox {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        flex-shrink: 0;
+        accent-color: var(--primary-color);
+      }
+      .chapter-item-label {
+        flex-grow: 1;
+        cursor: pointer;
+      }
+      .chapter-item-label strong {
+        color: var(--heading-color);
+      }
+      .chapter-item-label .chapter-index {
+        font-weight: bold;
+        color: var(--primary-color);
+        margin-right: 5px;
+      }
+      .chapter-item-details {
+        font-size: 0.8em;
+        color: var(--subtle-text-color);
+        margin-top: 3px;
+      }
+      .chapter-item-details span + span::before {
+        content: '|';
+        margin: 0 8px;
+        color: var(--separator-color);
+      }
+
+      /* --- Chapter Content Display --- */
+      .chapter-content {
+        margin-top: 20px;
+        padding: 25px;
+        border: 1px solid var(--card-border);
+        border-radius: var(--border-radius);
+        background-color: var(--secondary-bg-color);
+        transition: background-color var(--transition-speed);
+      }
+      .chapter-content h3 {
+        margin-top: 0;
+        /* margin-bottom: 15px; */
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--separator-color);
+      }
+      .chapter-content .chapter-meta-details {
+        /* Style for added metadata line */
+        font-size: 0.85em;
+        color: var(--subtle-text-color);
+        margin-top: -5px; /* Pull up slightly */
+        margin-bottom: 20px; /* Space before content */
+        font-style: italic;
+      }
+      .chapter-content .content-body {
+        font-size: 1.05em;
+      }
+      .chapter-content .content-body p {
+        margin-bottom: 1.3em;
+        line-height: 1.7;
+      }
+      .chapter-content .content-body img {
+        max-width: 85%;
+        height: auto;
+        display: block;
+        margin: 25px auto;
+        border-radius: var(--border-radius);
+        box-shadow: 0 3px 10px var(--shadow-color);
+        border: 1px solid var(--card-border);
+      }
+      /* Removed hr.chapter-separator styles */
+      .chapter-content.error-placeholder {
+        border-color: var(--error-border);
+        background-color: var(--error-bg);
+      }
+      .chapter-content.error-placeholder h3,
+      .chapter-content.error-placeholder p {
+        color: var(--error-text);
+      }
+
+      /* --- Utilities --- */
+      .sr-only {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        padding: 0 !important;
+        margin: -1px !important;
+        overflow: hidden !important;
+        clip: rect(0, 0, 0, 0) !important;
+        white-space: nowrap !important;
+        border: 0 !important;
+      }
+      .hidden {
+        display: none !important;
+      }
+
+      /* --- Spinner --- */
+      .spinner {
+        width: var(--spinner-size);
+        height: var(--spinner-size);
+        border: 2px solid currentColor;
+        border-bottom-color: transparent;
+        border-radius: 50%;
+        display: inline-block;
+        animation: spinner-rotation 0.75s linear infinite;
+      }
+      @keyframes spinner-rotation {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Wattpad Story Fetcher</h1>
+
+      <section class="input-controls" aria-labelledby="controls-heading">
+        <h2 id="controls-heading" class="sr-only"> Story Input and Chapter Selection </h2>
+        <div class="input-group">
+          <label for="story-url">Wattpad Story URL</label>
+          <input
+            type="text"
+            id="story-url"
+            placeholder="e.g., https://www.wattpad.com/story/123456789-your-story-title"
+            required
+            aria-required="true"
+          />
+        </div>
+
+        <!-- Chapters Section (Moved here, Initially Hidden) -->
+        <section class="output-section hidden" id="chapters-section" aria-labelledby="chapters-heading">
+          <h2 id="chapters-heading">📚 Select Chapters</h2>
+          <div class="chapter-selection-controls">
+            <label><input type="checkbox" id="select-all-chapters" disabled /> Select/Deselect All</label>
+            <input
+              type="text"
+              id="chapter-range"
+              placeholder="Range (e.g., 1-5, 8, 11-13)"
+              title="Enter chapter indices or ranges separated by commas"
+              aria-label="Chapter range input"
+              disabled
+            />
+            <button id="apply-range-button" type="button" disabled> Apply Range </button>
+          </div>
+          <div id="chapter-list-container">
+            <ul id="chapter-list" aria-live="polite">
+              <!-- Chapter list items will be injected here -->
+              <li style="text-align: center; color: var(--subtle-text-color); padding: 20px">
+                Enter a story URL and click "Fetch Story Info" first.
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <div id="status" role="alert" aria-live="assertive"></div>
+      </section>
+
+      <section class="action-buttons" aria-label="Action Buttons">
+        <div class="button-group">
+          <button id="fetch-metadata-button" type="button">
+            <span class="spinner" aria-hidden="true"></span>
+            <span>Fetch Story Info</span>
+          </button>
+          <button id="fetch-chapters-button" type="button" disabled>
+            <span class="spinner" aria-hidden="true"></span>
+            <span>Fetch Selected Chapters</span>
+          </button>
+          <button id="copy-markdown-button" type="button" disabled>
+            <span class="spinner" aria-hidden="true"></span>
+            <span>📋 Copy Markdown</span>
+          </button>
+          <button id="theme-toggle" type="button" title="Toggle Light/Dark Theme"> ☀️ </button>
+          <!-- Default Icon for Dark Theme -->
+        </div>
+      </section>
+
+      <!-- Metadata Section (Initially Hidden) -->
+      <section class="output-section hidden" id="metadata-section">
+        <div id="metadata-display">
+          <!-- Metadata will be injected here (restyled) -->
+        </div>
+      </section>
+
+      <!-- Content Section (Initially Hidden) -->
+      <section class="output-section hidden" id="content-section" aria-labelledby="content-heading">
+        <h2 id="content-heading">📝 Story Content</h2>
+        <div id="story-content-display">
+          <!-- Chapter content will be injected here -->
+        </div>
+      </section>
+
+      <!-- Hidden textarea for markdown copy fallback -->
+      <textarea id="markdown-output" class="sr-only" aria-hidden="true" tabindex="-1"></textarea>
+    </div>
+
+    <script>
+      /* --- Configuration --- */
+      const CONFIG = {
+        VERBOSE: true,
+        CORS_PROXY: 'https://flare.farel.at.eu.org/conduit/?url=',
+        API_BASE: 'https://www.wattpad.com/apiv2/storytext?id=',
+        FETCH_TIMEOUT: 4000, // ms
+
+        TURNDOWN: {
+          headingStyle: 'atx',
+          hr: '---',
+          bulletListMarker: '*',
+          codeBlockStyle: 'fenced',
+          emDelimiter: '_',
+          strongDelimiter: '**',
+          linkStyle: 'inlined'
+        },
+
+        // CSS Selectors for Scraping (Array allows fallbacks)
+        // These are based on common Wattpad structures but MAY BREAK if Wattpad updates its site.
+        selectors: {
+          general: {
+            link: ['link[rel="canonical"]'],
+            title: ['head > title'], // Used for story title and author name extraction
+            cover: ['img[data-testid="image"]'],
+            description: ['pre.mpshL._6pPkw'],
+            copyright: ['div[data-testid="copyright"]'],
+            status: ['div[data-testid="completed-tag"] > div > span'],
+            tags: ['div[data-testid="tag-carousel"] a span']
+          },
+          author: {
+            // Attempt to find a container focused on author info first
+            container: ['div[data-testid="story-badges"]'],
+            link: ['a[href*="/user/"]'], // Relative to container or document
+            username: ['a[href*="/user/"]'], // Relative to container or document
+            avatar: ['img[class*="avatar"]', 'img[src*="/useravatar/"]'] // Relative to container or document
+          },
+          stats: {
+            container: ['ul.n0iXe'],
+            items: ['li'], // Relative to container
+            type: ['span:not([data-testid="stats-value"]):not([class="sr-only"])'], // Relative to item
+            value: ['span[data-testid="stats-value"]'] // Relative to item
+          },
+          toc: {
+            // Table of Contents
+            container: ['div[data-testid="toc"]'],
+            link: ['a[href*="/www.wattpad.com/"]'], // Relative to container
+            title: ['div > div > div:nth-child(2)', '.wpYp-'], // Relative to link
+            date: ['.bSGSB'] // Relative to link
+          }
+        }
+      };
+
+      // ==== DOM Elements ====
+      const DOMElements = {
+        themeToggleButton: document.getElementById('theme-toggle'),
+        storyUrlInput: document.getElementById('story-url'),
+        fetchMetadataButton: document.getElementById('fetch-metadata-button'),
+        fetchChaptersButton: document.getElementById('fetch-chapters-button'),
+        copyMarkdownButton: document.getElementById('copy-markdown-button'),
+        statusDiv: document.getElementById('status'),
+        metadataSection: document.getElementById('metadata-section'),
+        metadataDisplay: document.getElementById('metadata-display'),
+        chaptersSection: document.getElementById('chapters-section'),
+        chapterListContainer: document.getElementById('chapter-list-container'),
+        chapterList: document.getElementById('chapter-list'),
+        selectAllCheckbox: document.getElementById('select-all-chapters'),
+        chapterRangeInput: document.getElementById('chapter-range'),
+        applyRangeButton: document.getElementById('apply-range-button'),
+        contentSection: document.getElementById('content-section'),
+        storyContentDisplay: document.getElementById('story-content-display'),
+        markdownOutput: document.getElementById('markdown-output'),
+        htmlElement: document.documentElement
+      };
+
+      // ==== Global State ====
+      let storyData = null; // Holds parsed metadata and chapter list
+      let fetchedChapters = {}; // Holds fetched chapter HTML { partId: htmlContent }
+      let turndownService = null;
+      let currentFetchController = null; // To abort ongoing fetch requests
+
+      // ==== Helper Functions ====
+
+      // Define the log object with specific methods for each level
+      const log = {
+        debug: (message, ...args) => {
+          if (CONFIG.VERBOSE) console.debug(`[D] ${message}`, ...args);
+        },
+        info: (message, ...args) => {
+          if (CONFIG.VERBOSE) console.info(`[I] ${message}`, ...args);
+        },
+        warn: (message, ...args) => {
+          console.warn(`[W] ${message}`, ...args);
+        },
+        error: (message, ...args) => {
+          console.error(`[E] ${message}`, ...args);
+        }
+      };
+
+      function showStatus(message, type = 'info', clearAfter = 0) {
+        log.info(`Status ${type}: ${message}`);
+        DOMElements.statusDiv.textContent = message;
+        DOMElements.statusDiv.className = type;
+        DOMElements.statusDiv.style.display = 'block';
+        DOMElements.statusDiv.setAttribute('aria-hidden', 'false');
+        if (clearAfter > 0) {
+          setTimeout(clearStatus, clearAfter);
+        }
+      }
+
+      function clearStatus() {
+        DOMElements.statusDiv.textContent = '';
+        DOMElements.statusDiv.style.display = 'none';
+        DOMElements.statusDiv.removeAttribute('class');
+        DOMElements.statusDiv.setAttribute('aria-hidden', 'true');
+      }
+
+      function abortPreviousFetch() {
+        if (currentFetchController) {
+          currentFetchController.abort();
+          log.info('Previous fetch request aborted.');
+          currentFetchController = null; // Reset controller
+        }
+      }
+
+      /** Attempts to find the first matching element using an array of selectors. */
+      function queryElement(selectors, parentElement = document) {
+        const selectorList = Array.isArray(selectors) ? selectors : [selectors];
+        for (const selector of selectorList) {
+          try {
+            const element = parentElement?.querySelector(selector);
+            if (element) {
+              log.debug(`Element found with selector: '${selector}'`);
+              return element;
+            }
+          } catch (e) {
+            log.warn(`Error selecting element with selector '${selector}'`, e);
+          }
+        }
+        log.debug(`No element found for selectors: ${JSON.stringify(selectorList)}`);
+        return null;
+      }
+
+      /** Attempts to find all matching elements using the first successful selector from an array. */
+      function queryAllElements(selectors, parentElement = document) {
+        const selectorList = Array.isArray(selectors) ? selectors : [selectors];
+        for (const selector of selectorList) {
+          try {
+            const elements = parentElement?.querySelectorAll(selector);
+            if (elements && elements.length > 0) {
+              log.debug(`Found ${elements.length} elements with selector: '${selector}'`);
+              return elements;
+            }
+          } catch (e) {
+            log.warn(`Error selecting elements with selector '${selector}'`, e);
+          }
+        }
+        log.debug(`No elements found for selectors: ${JSON.stringify(selectorList)}`);
+        return document.querySelectorAll('.never-match-anything-ever'); // Return empty NodeList
+      }
+
+      /** Fetches content with timeout and proxy */
+      async function fetchWithTimeout(url, type = 'resource', options = {}) {
+        abortPreviousFetch(); // Cancel any previous fetch
+        currentFetchController = new AbortController();
+        const { signal } = currentFetchController;
+
+        const proxiedUrl = `${CONFIG.CORS_PROXY}${encodeURIComponent(url)}`;
+        log.info(`Fetching ${type} via proxy: ${url}`); // Log original URL for clarity
+
+        const headers = {
+          'X-Requested-With': 'XMLHttpRequest', // Some proxies might need this
+          ...options.headers
+        };
+
+        const fetchPromise = fetch(proxiedUrl, { ...options, headers, signal });
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(
+            () => reject(new Error(`${type} fetch timed out after ${CONFIG.FETCH_TIMEOUT / 1000}s`)),
+            CONFIG.FETCH_TIMEOUT
+          )
+        );
+
+        try {
+          const response = await Promise.race([fetchPromise, timeoutPromise]);
+          log.info(`Fetch response status for ${type}: ${response.status}`);
+
+          if (response.status === 429) throw new Error(`Rate limited by proxy or target (429). Wait & try again.`);
+          if (!response.ok) {
+            let errorText = `HTTP ${response.status} ${response.statusText}`;
+            try {
+              const errorBody = await response.text();
+              errorText += ` - ${errorBody.substring(0, 150)}...`;
+              log.warn(`Fetch error body (partial): ${errorBody.substring(0, 500)}`);
+            } catch (e) {
+              /* Ignore body read error */
+            }
+            throw new Error(errorText);
+          }
+
+          log.info(`Successfully fetched ${type}.`);
+          return await response.text(); // Assuming text response is needed
+        } catch (error) {
+          if (error.name === 'AbortError') {
+            log.info(`${type} fetch aborted.`);
+            throw new Error('Fetch aborted by user.'); // More specific message
+          }
+          log.error(`Fetch ${type} Error: ${error.message}`, error);
+          throw error; // Re-throw the original error
+        } finally {
+          // Only clear controller if it hasn't been replaced by a new fetch
+          if (currentFetchController && currentFetchController.signal === signal) {
+            currentFetchController = null;
+          }
+        }
+      }
+
+      // --- Parsing Helpers ---
+      function extractStoryId(url) {
+        return url?.match(/\/story\/(\d+)/)?.[1] ?? null;
+      }
+      function extractPartId(url) {
+        return url?.match(/\/(\d+)-/)?.[1] ?? null;
+      }
+
+      // Helper function to query an element and extract data (textContent or attribute).
+      function getElementData(selector, context, dataType = 'textContent', defaultValue = null) {
+          try {
+              const element = queryElement(selector, context);
+              if (!element) return defaultValue;
+
+              let value;
+              if (dataType === 'textContent') {
+                  value = element.textContent;
+              } else {
+                  value = element.getAttribute(dataType);
+              }
+
+              // Return trimmed string if value is a string, otherwise the value itself, or default
+              return typeof value === 'string' ? value.trim() || defaultValue : value ?? defaultValue;
+          } catch (error) {
+              log.warn(`Error getting data for selector ${selector}: ${error.message}`);
+              return defaultValue;
+          }
+      }
+
+      // Parses basic story information (URL, ID, Title, Cover).
+      function parseBasicInfo(doc, metadata, storyUrl) {
+          log.info('Parsing Basic Info...');
+          // Use canonical URL if available, otherwise the input URL
+          const canonicalUrl = getElementData(CONFIG.selectors.general.link, doc, 'href', storyUrl);
+          metadata.url = canonicalUrl;
+          metadata.id = extractStoryId(metadata.url); // Assumes extractStoryId handles potential errors
+
+          const headTitleText = getElementData(CONFIG.selectors.general.title, doc, 'textContent', '');
+          const headTitleParts = headTitleText.split(' - '); // Split title and potential author name
+          metadata.title = headTitleParts[0]?.trim() || 'Untitled';
+          // Store potential author fullname from title for later use if needed
+          metadata._authorFullnameFromTitle = headTitleParts[1]?.trim() || null;
+
+          metadata.cover = getElementData(CONFIG.selectors.general.cover, doc, 'src', null);
+
+          log.info(` -> URL=${metadata.url}, ID=${metadata.id}, Title='${metadata.title}', Cover=${metadata.cover}`);
+      }
+
+      // Parses author information (Username, Fullname, Profile URL, Avatar).
+      function parseAuthorInfo(doc, metadata) {
+          log.info('Parsing Author Info...');
+          const authorContainer = queryElement(CONFIG.selectors.author.container, doc);
+
+          if (!authorContainer) {
+              log.warn(' -> Author container not found.');
+              // Use fullname from title if available, otherwise 'Unknown'
+              metadata.author.fullname = metadata._authorFullnameFromTitle ?? 'Unknown';
+              metadata.author.username = 'Unknown'; // Explicitly set others to defaults
+              metadata.author.profileUrl = null;
+              metadata.author.avatar = null;
+          } else {
+              metadata.author.profileUrl = getElementData(CONFIG.selectors.author.link, authorContainer, 'href', null);
+              metadata.author.username = getElementData(CONFIG.selectors.author.username, authorContainer, 'textContent', 'Unknown');
+              metadata.author.avatar = getElementData(CONFIG.selectors.author.avatar, authorContainer, 'src', null);
+              // Prefer fullname from title split, fallback to username if title part is missing
+              metadata.author.fullname = metadata._authorFullnameFromTitle ?? metadata.author.username ?? 'Unknown';
+          }
+          // Clean up temporary property
+          delete metadata._authorFullnameFromTitle;
+
+          log.info(` -> Author: ${JSON.stringify(metadata.author)}`);
+      }
+
+      // Parses story description.
+      function parseDescription(doc, metadata) {
+          log.info('Parsing Description...');
+          metadata.description = getElementData(CONFIG.selectors.general.description, doc, 'textContent', '*No description provided.*');
+          log.info(` -> Description: ${metadata.description.substring(0, 60)}...`);
+      }
+
+      // Parses copyright information.
+      function parseCopyright(doc, metadata) {
+          log.info('Parsing Copyright...');
+          metadata.copyright = getElementData(CONFIG.selectors.general.copyright, doc, 'textContent', 'Unknown');
+          log.info(` -> Copyright: ${metadata.copyright}`);
+      }
+
+      // Parses story status (Completed/Ongoing).
+      function parseStatus(doc, metadata) {
+          log.info('Parsing Status...');
+          const statusText = getElementData(CONFIG.selectors.general.status, doc, 'textContent', '')?.toLowerCase();
+          metadata.completed = statusText?.includes('complete') ?? false; // Ensure it's explicitly true/false
+          log.info(` -> Status Text='${statusText}', Completed=${metadata.completed}`);
+      }
+
+      // Parses story tags.
+      function parseTags(doc, metadata) {
+          log.info('Parsing Tags...');
+          const tagElements = queryAllElements(CONFIG.selectors.general.tags, doc);
+          const tags = Array.from(tagElements)
+              .map((el) => el.textContent?.trim())
+              .filter(Boolean); // Remove null/empty strings
+          metadata.tags = Array.from(new Set(tags)); // Remove duplicates
+          log.info(` -> Found ${metadata.tags.length} unique tags: ${metadata.tags.join(', ')}`);
+      }
+
+      // Parses story statistics (Reads, Votes, Parts, Time).
+      function parseStats(doc, metadata) {
+          log.info('Parsing Stats...');
+          const statsContainer = queryElement(CONFIG.selectors.stats.container, doc);
+          // Initialize with defaults - ensures keys exist even if container not found
+          const foundStats = { reads: 'N/A', votes: 'N/A', parts: 'N/A', time: 'N/A' };
+
+          if (!statsContainer) {
+              log.warn(' -> Stats container not found. Using default values.');
+          } else {
+              log.debug(' -> Stats container found. Parsing items.');
+              const statItems = queryAllElements(CONFIG.selectors.stats.items, statsContainer);
+
+              statItems.forEach((item) => {
+                  // Using querySelector within the item context
+                  const typeElement = item.querySelector(CONFIG.selectors.stats.label || 'span:not([data-testid="stats-value"])'); // Allow config override for label selector
+                  const valueElement = item.querySelector(CONFIG.selectors.stats.value); // Assumes value selector is defined
+
+                  // Prioritize specific label element, fallback to item's text content
+                  const type = (typeElement?.textContent || item.textContent || '').toLowerCase().trim();
+                  const value = valueElement?.textContent?.trim();
+
+                  if (value) {
+                      if (type.includes('read')) foundStats.reads = value;
+                      else if (type.includes('vote')) foundStats.votes = value;
+                      else if (type.includes('part')) foundStats.parts = value; // Will be potentially overwritten by TOC count later
+                      else if (type.includes('time')) foundStats.time = value;
+                  } else {
+                       log.debug(` -> Could not parse value for stat type containing '${type}'`);
+                  }
+              });
+          }
+          // Merge found stats with potentially existing stats (though we initialize metadata.stats fully earlier)
+          metadata.stats = { ...metadata.stats, ...foundStats };
+          log.info(` -> Parsed Stats: ${JSON.stringify(metadata.stats)}`);
+      }
+
+      // Parses the Table of Contents (Chapters/Parts).
+      function parseTOC(doc, metadata) {
+          log.info('Parsing Table of Contents (TOC)...');
+          const tocContainer = queryElement(CONFIG.selectors.toc.container, doc);
+          const parts = []; // Build list locally
+
+          if (!tocContainer) {
+              log.warn(' -> TOC container not found.');
+          } else {
+              const tocLinks = queryAllElements(CONFIG.selectors.toc.link, tocContainer);
+              log.info(` -> Found ${tocLinks.length} potential chapter links in TOC.`);
+
+              tocLinks.forEach((partLink, index) => {
+                  const part = { index: index + 1 }; // 1-based index for display
+                  try {
+                      // Extract data using helper where possible, direct attribute for URL
+                      const rawUrl = partLink.getAttribute('href'); // Direct access needed before resolving
+                      if (!rawUrl) {
+                          log.warn(` -> Skipping part index ${index}: Missing href attribute.`);
+                          return; // Skip this link element entirely
+                      }
+
+                      // Use URL constructor for robust relative path resolution
+                      part.url = new URL(rawUrl, metadata.url).href;
+                      part.id = extractPartId(part.url); // Assumes extractPartId handles potential errors
+                      part.title = getElementData(CONFIG.selectors.toc.title, partLink, 'textContent', `Part ${part.index}`);
+                      part.createDate = getElementData(CONFIG.selectors.toc.date, partLink, 'textContent', null);
+
+                      // Add part only if essential info (ID and URL) is present
+                      if (part.id && part.url) {
+                          parts.push(part);
+                          log.debug(
+                              ` -> Parsed Part ${part.index}: ID=${part.id}, Title='${part.title.substring(0, 30)}...', Date='${part.createDate}'`
+                          );
+                      } else {
+                          log.warn(` -> Skipping part index ${index}: Missing essential info (ID=${part.id}, URL=${part.url}).`);
+                      }
+                  } catch (e) {
+                      // Catch errors during URL parsing or data extraction for a specific part
+                      log.error(` -> Error processing TOC link index ${index}: ${e.message}`, e, partLink.outerHTML.substring(0, 100));
+                  }
+              });
+          }
+          metadata.parts = parts; // Assign the fully processed list
+          log.info(` -> Successfully parsed ${metadata.parts.length} chapters from TOC.`);
+      }
+
+      // Derives final metadata fields based on previously parsed data.
+      function deriveFinalData(metadata) {
+          log.info('Deriving final data...');
+          // Update stats.parts based on the actual count from TOC if available
+          if (metadata.parts.length > 0) {
+              metadata.stats.parts = metadata.parts.length.toString();
+               log.info(` -> Updated stats.parts count from TOC: ${metadata.stats.parts}`);
+          } else if (metadata.stats.parts === 'N/A') {
+              // If TOC empty and stats didn't find parts, assume 0 parts.
+              metadata.stats.parts = '0';
+               log.info(` -> Set stats.parts count to '0' as TOC was empty/not found.`);
+          }
+
+          // Add First/Last published dates from parsed parts
+          metadata.firstPublishedPartDate = metadata.parts[0]?.createDate ?? null;
+          metadata.lastPublishedPartDate = metadata.parts[metadata.parts.length - 1]?.createDate ?? null;
+          log.info(` -> First published=${metadata.firstPublishedPartDate}, Last published=${metadata.lastPublishedPartDate}`);
+      }
+
+      // Parses the main story page HTML to extract metadata.
+      function parseStoryPage(html, storyUrl) {
+          log.info('<<< Starting Main Story Page Parsing >>>');
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, 'text/html');
+
+          // Initialize the metadata object with default values
+          const metadata = {
+              url: storyUrl, // Start with the provided URL
+              id: null,
+              title: 'Untitled',
+              cover: null,
+              author: { username: 'Unknown', fullname: 'Unknown', profileUrl: null, avatar: null },
+              description: '*No description provided.*',
+              copyright: 'Unknown',
+              completed: false,
+              tags: [],
+              stats: { reads: 'N/A', votes: 'N/A', parts: 'N/A', time: 'N/A' }, // Initialize fully
+              parts: [],
+              firstPublishedPartDate: null,
+              lastPublishedPartDate: null
+          };
+
+          try {
+              // --- Execute Parsing Steps ---
+              parseBasicInfo(doc, metadata, storyUrl);
+              parseAuthorInfo(doc, metadata); // Relies on _authorFullnameFromTitle potentially set in parseBasicInfo
+              parseDescription(doc, metadata);
+              parseCopyright(doc, metadata);
+              parseStatus(doc, metadata);
+              parseTags(doc, metadata);
+              parseStats(doc, metadata);
+              parseTOC(doc, metadata); // Populates metadata.parts
+
+              // --- Final Data Derivation ---
+              deriveFinalData(metadata); // Updates stats.parts based on TOC, sets dates
+
+              log.info('<<< Completed Metadata Parsing Successfully >>>');
+              return metadata;
+
+          } catch (error) {
+              log.error('!!! Critical error during metadata parsing !!!', error);
+              // Depending on requirements, you might want to return partial data,
+              // throw the error, or return a specific error structure.
+              // Example: Return partial data with an error flag/message
+              return {
+                   ...metadata, // Return whatever was parsed before the error
+                   error: `Parsing failed: ${error.message}`,
+                   parsingComplete: false // Add a flag indicating failure
+              };
+          }
+      }
+
+      /** Updates the UI to display the fetched metadata */
+      function displayMetadata(data) {
+        const {
+          title,
+          url,
+          author,
+          cover,
+          description,
+          copyright,
+          stats,
+          parts,
+          tags,
+          completed,
+          firstPublishedPartDate,
+          lastPublishedPartDate
+        } = data;
+
+        // Author display logic
+        let authorDisplay = `<a href="${author.profileUrl || '#'}" target="_blank" rel="noopener noreferrer">${author.fullname}</a>`;
+        if (author.username && author.username.toLowerCase() !== author.fullname.toLowerCase()) {
+          authorDisplay += ` <span class="subtle-text">(@${author.username})</span>`;
+        }
+
+        const safeDescription = description?.replace(/</g, '&lt;').replace(/>/g, '&gt;') || '_No description provided._';
+
+        const html = `
+                <div class="metadata-header">
+                    ${cover ? `<div class="cover-image-wrapper"><img src="${cover}" alt="Story Cover" class="cover-image" loading="lazy"></div>` : ''}
+                    <div class="metadata-info">
+                        <h3><a href="${url}" target="_blank" rel="noopener noreferrer">${title}</a></h3>
+                        <div class="author-info">
+                            ${author.avatar ? `<img src="${author.avatar}" alt="Author Avatar" class="author-avatar" loading="lazy">` : ''}
+                            <span>${authorDisplay}</span>
+                        </div>
+                    </div>
+                </div>
+
+                ${description ? `<div class="description-text">${safeDescription}</div>` : ''}
+
+                <div class="metadata-details">
+                    <div class="detail-item"><span>Chapters</span> ${stats?.parts ?? parts?.length ?? '0'}</div>
+                    <div class="detail-item"><span>Reads</span> ${stats?.reads ?? 'N/A'}</div>
+                    <div class="detail-item"><span>Votes</span> ${stats?.votes ?? 'N/A'}</div>
+                    <div class="detail-item"><span>Time</span> ${stats?.time ?? 'N/A'}</div>
+                    <div class="detail-item"><span>Status</span> ${
+                      completed ? '✅ Completed'
+                      : '⏳ Ongoing'
+                    }</div>
+                    <div class="detail-item"><span>First Chapter</span> ${firstPublishedPartDate || 'N/A'}</div>
+                    <div class="detail-item"><span>Last Chapter</span> ${lastPublishedPartDate || 'N/A'}</div>
+                    <div class="detail-item"><span>Copyright</span> ${copyright || 'N/A'}</div>
+                </div>
+
+                ${tags?.length > 0 ? `<div class="tags-container"> ${tags.map((tag) => `<span class="tag-item">${tag}</span>`).join(' ')}</div>` : ''}
+            `;
+
+        DOMElements.metadataDisplay.innerHTML = html;
+        DOMElements.metadataSection.classList.remove('hidden');
+        log.info('Metadata displayed.');
+      }
+
+      /** Populates the chapter selection list */
+      function displayChapterSelection(parts) {
+        DOMElements.chapterList.innerHTML = ''; // Clear previous list
+        if (!parts || parts.length === 0) {
+          DOMElements.chapterList.innerHTML =
+            '<li style="text-align: center; color: var(--subtle-text-color); padding: 20px;">No chapters found in the Table of Contents.</li>';
+          log.warn('No chapters found to display.');
+          // Ensure controls are disabled if no chapters
+          DOMElements.selectAllCheckbox.disabled = true;
+          DOMElements.applyRangeButton.disabled = true;
+          DOMElements.chapterRangeInput.disabled = true;
+        } else {
+          parts.forEach((part) => {
+            const li = document.createElement('li');
+            const checkboxId = `chapter-chk-${part.id || part.index}`;
+            const titleDisplay = part.title || `Part ${part.index}`;
+            const publishDate = part.createDate ? part.createDate : 'N/A';
+
+            li.innerHTML = `
+                        <input type="checkbox" id="${checkboxId}" data-part-id="${part.id}" data-index="${part.index}" class="chapter-item-checkbox">
+                        <label for="${checkboxId}" class="chapter-item-label">
+                            <div><strong><span class="chapter-index">Part ${part.index}:</span> ${titleDisplay}</strong></div>
+                            <div class="chapter-item-details">
+                                <span>ID: ${part.id || 'N/A'}</span>
+                                <span>Published: ${publishDate}</span>
+                            </div>
+                        </label>`;
+            DOMElements.chapterList.appendChild(li);
+          });
+          // Enable controls now that chapters are present
+          DOMElements.selectAllCheckbox.disabled = false;
+          DOMElements.applyRangeButton.disabled = false;
+          DOMElements.chapterRangeInput.disabled = false;
+          log.info(`Chapter list populated with ${parts.length} items.`);
+        }
+        DOMElements.chaptersSection.classList.remove('hidden'); // Show the whole section
+        DOMElements.selectAllCheckbox.checked = false;
+        DOMElements.selectAllCheckbox.indeterminate = false;
+      }
+
+      /** Adds fetched chapter content to the display area */
+      function displayChapterContent(
+        partId,
+        partIndex,
+        partTitle,
+        publishDate,
+        htmlContent,
+        isError = false,
+        errorMessage = ''
+      ) {
+        log.debug(
+          `Displaying content for chapter ${partId} (Index ${partIndex}, '${partTitle.substring(0, 30)}...')`
+        );
+        const chapterDiv = document.createElement('div');
+        chapterDiv.className = `chapter-content ${isError ? 'error-placeholder' : ''}`;
+        chapterDiv.setAttribute('data-part-id', partId);
+        chapterDiv.setAttribute('data-part-index', partIndex);
+
+        const metadataLine = `<p class="chapter-meta-details"><em>Part Number: ${partIndex} | Published: ${publishDate} | ID: ${partId}</em></p>`;
+
+        let contentHtml;
+        if (isError) {
+          contentHtml = `<h3>${partTitle}</h3>${metadataLine}<p style='font-weight: bold;'>❌ Fetch Failed: ${errorMessage}</p>`;
+        } else {
+          // Basic sanitization: remove script tags
+          const cleanHtml = htmlContent.replace(/<script[^>]*>.*?<\/script>/gis, '');
+          contentHtml = `<h3>${partTitle}</h3>${metadataLine}<div class="content-body">${cleanHtml}</div>`;
+        }
+
+        chapterDiv.innerHTML = contentHtml; // No <hr> added here
+        DOMElements.storyContentDisplay.appendChild(chapterDiv);
+        DOMElements.contentSection.classList.remove('hidden'); // Ensure section is visible
+      }
+
+      /** Gets the Part IDs of the selected chapters */
+      function getSelectedChapterIds() {
+        const ids = Array.from(DOMElements.chapterList.querySelectorAll('.chapter-item-checkbox:checked'))
+          .map((cb) => cb.dataset.partId)
+          .filter(Boolean); // Filter out any null/undefined IDs
+        log.debug(`Selected chapter IDs: [${ids.join(', ')}]`);
+        return ids;
+      }
+
+      /** Parses a range string (e.g., "1-5, 8, 11-13") into an array of indices */
+      function parseChapterRange(rangeString, maxIndex) {
+        const indices = new Set();
+        if (!rangeString || typeof rangeString !== 'string' || maxIndex <= 0) return [];
+        log.info(`Parsing range string: '${rangeString}', maxIndex: ${maxIndex}`);
+
+        const parts = rangeString.split(',');
+        for (const part of parts) {
+          const trimmedPart = part.trim();
+          if (!trimmedPart) continue;
+
+          if (trimmedPart.includes('-')) {
+            const [startStr, endStr] = trimmedPart.split('-');
+            const start = parseInt(startStr, 10);
+            const end = parseInt(endStr, 10);
+            if (isNaN(start) || isNaN(end) || start < 1 || end > maxIndex || start > end) {
+              throw new Error(`Invalid range: "${trimmedPart}". Use format like 1-10.`);
+            }
+            for (let i = start; i <= end; i++) indices.add(i);
+          } else {
+            const index = parseInt(trimmedPart, 10);
+            if (isNaN(index) || index < 1 || index > maxIndex) {
+              throw new Error(`Invalid chapter number: "${trimmedPart}". Must be between 1 and ${maxIndex}.`);
+            }
+            indices.add(index);
+          }
+        }
+        const sortedIndices = Array.from(indices).sort((a, b) => a - b);
+        log.info(`Parsed indices: [${sortedIndices.join(', ')}]`);
+        return sortedIndices;
+      }
+
+      /** Generates Markdown content from story data and fetched chapters */
+      function buildMarkdown() {
+        log.info('Building Markdown output...');
+        if (!storyData || !storyData.parts) {
+          log.warn('No story data available for Markdown.');
+          return '';
+        }
+        if (!turndownService) {
+          log.error('Turndown service not initialized!');
+          showStatus('❌ Markdown converter not ready.', 'error');
+          return '';
+        }
+
+        const {
+          title = 'Untitled',
+          url,
+          author = {},
+          description,
+          parts,
+          cover,
+          stats,
+          tags,
+          copyright,
+          completed,
+          firstPublishedPartDate,
+          lastPublishedPartDate
+        } = storyData;
+
+        const {
+          name = 'Unknown',
+          username,
+          profileUrl = '#',
+          avatar
+        } = author;
+
+        const md = [];
+
+        // --- Header ---
+        md.push(`# 📖 [${title}](${url})\n`);
+        if (cover) md.push(`![Story Cover](${cover})\n`);
+        if (avatar) md.push(`![Author Avatar](${avatar})\n`);
+
+        let authorDisplayMd = `[${name}](${profileUrl})`;
+        if (username && username.toLowerCase() !== name.toLowerCase()) {
+          authorDisplayMd += ` (@${username})`;
+        }
+        md.push(`**Author:** ${authorDisplayMd}\n`);
+
+        md.push('\n---\n');
+
+        // --- Description ---
+        md.push(`## 📝 Description\n`);
+        try {
+          // Convert description HTML (if any) to Markdown
+          const tempDiv = document.createElement('div');
+          // Basic text-to-markdown conversion for plain text description
+          tempDiv.innerHTML = description.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+          md.push(`${turndownService.turndown(tempDiv.innerHTML)}\n\n`);
+        } catch (e) {
+          log.warn('Error converting description to Markdown, using raw text.', e);
+          md.push(`${description}\n\n`); // Fallback to raw text
+        }
+
+        // --- Metadata Table ---
+        md.push(`## 📊 Story Metadata\n`);
+        const metadataFields = [
+          ['Story URL', url],
+          ['Story ID', storyData.id],
+          [
+            'Status',
+            completed ? 'Completed'
+            : 'Ongoing'
+          ],
+          ['Chapters', stats.parts],
+          ['Reads', stats.reads],
+          ['Votes', stats.votes],
+          ['Time', stats.time],
+          ['First Chapter', firstPublishedPartDate],
+          ['Last Chapter', lastPublishedPartDate],
+          ['Copyright', copyright],
+          [
+            'Tags',
+            tags.map((t) =>
+            `\`${t}\``).join(', ')
+          ]
+        ].filter(Boolean); // Remove null/false entries
+
+        if (metadataFields.length > 0) {
+          md.push('| Detail | Value |\n|---|---|\n');
+          metadataFields.forEach(([key, value]) => md.push(`| ${key} | ${value} |\n`));
+        } else {
+          md.push('_No metadata available._\n');
+        }
+        md.push('\n---\n');
+
+        // --- Chapters ---
+        md.push(`## 📚 Chapters\n`);
+        const selectedIds = getSelectedChapterIds();
+        // Filter parts based on selected IDs AND ensure the content was actually fetched
+        const selectedParts = parts
+          .filter((part) => selectedIds.includes(String(part.id)) && fetchedChapters[String(part.id)])
+          .sort((a, b) => a.index - b.index); // Sort by original index
+
+        if (selectedParts.length === 0) {
+          md.push('_No chapters selected or content not fetched._\n');
+        } else {
+          selectedParts.forEach((part) => {
+            const partId = String(part.id);
+            const chapterTitle = part.title || `Chapter ${part.index}`;
+            const publishDate = part.createDate || null;
+            const chapterUrl = part.url || '#';
+
+            md.push(`### [${chapterTitle}](${chapterUrl})\n`);
+
+            // Chapter Metadata Line
+            let chapterMetaMd = `***Part Number:** ${part.index}`;
+            if (publishDate) chapterMetaMd += ` | **Published:** ${publishDate}`;
+            chapterMetaMd += ` | **Chapter ID:** ${partId}*`;
+            md.push(`${chapterMetaMd}\n\n`); // Add extra newline for separation
+
+            const rawHtml = fetchedChapters[partId];
+            if (rawHtml) {
+              try {
+                // Use Turndown to convert chapter HTML to Markdown
+                md.push(turndownService.turndown(rawHtml));
+              } catch (e) {
+                log.error(`Markdown conversion failed for chapter ${partId}`, e);
+                md.push(`\n\n_[Error converting chapter content to Markdown.]_\n\n`);
+              }
+            } else {
+              // This case should ideally be filtered out above, but as a fallback:
+              md.push('_Chapter content not available._');
+            }
+
+            md.push('\n\n---\n\n');
+          });
+        }
+
+        let finalMd = md.join('').trim();
+        // Clean up potential trailing separators (less likely now but good practice)
+        while (finalMd.endsWith('\n\n---') || finalMd.endsWith('\n---')) {
+          if (finalMd.endsWith('\n\n---')) finalMd = finalMd.slice(0, -'\n\n---'.length).trimEnd();
+          else if (finalMd.endsWith('\n---')) finalMd = finalMd.slice(0, -'\n---'.length).trimEnd();
+        }
+
+        log.info(`Markdown build complete. Length: ${finalMd.length}`);
+        return finalMd;
+      }
+
+      /** Manages UI element states (disabled/enabled, loading class) */
+      function setUIState(state) {
+        log.info(`Setting UI state to: ${state}`);
+        const isIdle = state === 'idle';
+        const isFetchingMeta = state === 'loadingMeta';
+        const isMetaLoaded = state === 'metaLoaded';
+        const isFetchingChapters = state === 'loadingChapters';
+        const isChaptersLoaded = state === 'chaptersLoaded';
+        const hasFetchedChapters = Object.keys(fetchedChapters).length > 0;
+        const hasChaptersToList = storyData?.parts?.length > 0;
+
+        // Input URL
+        DOMElements.storyUrlInput.disabled = isFetchingMeta || isFetchingChapters;
+
+        // Fetch Metadata Button
+        DOMElements.fetchMetadataButton.disabled = isFetchingMeta || isFetchingChapters;
+        DOMElements.fetchMetadataButton.classList.toggle('loading', isFetchingMeta);
+        DOMElements.fetchMetadataButton.querySelector('span:not(.spinner)').textContent =
+          isFetchingMeta ? 'Fetching Info...' : 'Fetch Story Info';
+
+        // Fetch Chapters Button
+        DOMElements.fetchChaptersButton.disabled = !(isMetaLoaded || isChaptersLoaded) || isFetchingChapters || !hasChaptersToList;
+        DOMElements.fetchChaptersButton.classList.toggle('loading', isFetchingChapters);
+        DOMElements.fetchChaptersButton.querySelector('span:not(.spinner)').textContent =
+          isFetchingChapters ? 'Fetching Chapters...' : 'Fetch Selected Chapters';
+
+        // Copy Markdown Button
+        DOMElements.copyMarkdownButton.disabled = !hasFetchedChapters || isFetchingMeta || isFetchingChapters;
+        DOMElements.copyMarkdownButton.classList.remove('loading'); // Reset loading state if button gets re-enabled
+        DOMElements.copyMarkdownButton.querySelector('span:not(.spinner)').textContent = '📋 Copy Markdown'; // Reset text
+
+        // Chapter Selection Controls (in input area)
+        DOMElements.selectAllCheckbox.disabled = !(isMetaLoaded || isChaptersLoaded) || isFetchingChapters || !hasChaptersToList;
+        DOMElements.chapterRangeInput.disabled = !(isMetaLoaded || isChaptersLoaded) || isFetchingChapters || !hasChaptersToList;
+        DOMElements.applyRangeButton.disabled = !(isMetaLoaded || isChaptersLoaded) || isFetchingChapters || !hasChaptersToList;
+
+        // Chapter List Checkboxes (disable during chapter fetch)
+        DOMElements.chapterList.querySelectorAll('.chapter-item-checkbox').forEach((cb) => (cb.disabled = isFetchingChapters));
+
+        // Hide/Show Sections
+        if (state === 'idle' || state === 'loadingMeta') {
+          DOMElements.chaptersSection.classList.add('hidden'); // Hide chapters section initially
+          DOMElements.metadataSection.classList.add('hidden');
+          DOMElements.contentSection.classList.add('hidden');
+        }
+
+        // Chapter section shown when meta loaded (if chapters exist)
+        if ((isMetaLoaded || isFetchingChapters || isChaptersLoaded) && hasChaptersToList) {
+          DOMElements.chaptersSection.classList.remove('hidden');
+        } else if (!hasChaptersToList) {
+          // Ensure it stays hidden if meta loads but no chapters found
+          DOMElements.chaptersSection.classList.add('hidden');
+        }
+
+        // Metadata section shown when loaded or when fetching chapters
+        if (isMetaLoaded || isFetchingChapters || isChaptersLoaded) {
+          DOMElements.metadataSection.classList.remove('hidden');
+        }
+        // Content section shown when chapters are being fetched or are loaded
+        if (isFetchingChapters || isChaptersLoaded) {
+          DOMElements.contentSection.classList.remove('hidden');
+        }
+      }
+
+      // ==== Event Listeners ====
+
+      DOMElements.fetchMetadataButton.addEventListener('click', async () => {
+        log.info('Fetch Metadata button clicked.');
+        const url = DOMElements.storyUrlInput.value.trim();
+        if (!url || !url.includes('wattpad.com/story/')) {
+          showStatus('❌ Please enter a valid Wattpad Story URL.', 'error', 5000);
+          return;
+        }
+
+        // Reset state before fetching
+        storyData = null;
+        fetchedChapters = {};
+        DOMElements.metadataDisplay.innerHTML = '';
+        DOMElements.chapterList.innerHTML =
+          '<li style="text-align: center; color: var(--subtle-text-color); padding: 20px;">Fetching metadata...</li>'; // Update placeholder
+        DOMElements.storyContentDisplay.innerHTML = '';
+        DOMElements.chapterRangeInput.value = '';
+        clearStatus();
+        setUIState('loadingMeta'); // Set loading state
+
+        try {
+          showStatus('⏳ Fetching story page HTML...', 'info');
+          const html = await fetchWithTimeout(url, 'Story Page HTML');
+          log.info('HTML fetched, starting parse...');
+          storyData = parseStoryPage(html, url);
+
+          if (!storyData || !storyData.id || !storyData.title) {
+            throw new Error("Failed to parse essential story data (ID, Title). Wattpad's layout might have changed.");
+          }
+
+          log.info('Parsing complete, displaying data...');
+          displayMetadata(storyData);
+          displayChapterSelection(storyData.parts); // Display chapter list
+
+          const statusMsg = `✅ Metadata loaded for "${storyData.title}".`;
+          const chapterWarning = storyData.parts?.length > 0 ? '' : ' (Warning: No chapters found in TOC)';
+          showStatus(statusMsg + chapterWarning, storyData.parts?.length > 0 ? 'success' : 'info', 6000);
+          setUIState('metaLoaded'); // Set state after successful load
+        } catch (error) {
+          log.error('Error fetching/parsing metadata:', error);
+          const userMessage = error.message.includes('abort') ? 'Fetch cancelled.' : `⚠️ Error: ${error.message}`;
+          showStatus(userMessage, 'error');
+          // Reset UI elements specific to chapters/metadata if fetch fails
+          DOMElements.metadataSection.classList.add('hidden');
+          DOMElements.chaptersSection.classList.add('hidden'); // Ensure chapter section is hidden on error
+          DOMElements.contentSection.classList.add('hidden');
+          DOMElements.chapterList.innerHTML =
+            '<li style="text-align: center; color: var(--subtle-text-color); padding: 20px;">Enter a story URL and click "Fetch Story Info" first.</li>'; // Reset placeholder
+          setUIState('error'); // Or back to 'idle' if preferred after error
+          setTimeout(() => setUIState('idle'), 100); // Briefly show error state then idle
+        }
+      });
+
+      DOMElements.fetchChaptersButton.addEventListener('click', async () => {
+        log.info('Fetch Chapters button clicked.');
+        const selectedIds = getSelectedChapterIds();
+        if (selectedIds.length === 0) {
+          showStatus('ℹ️ Please select one or more chapters to fetch.', 'info', 3000);
+          return;
+        }
+
+        clearStatus();
+        setUIState('loadingChapters');
+        DOMElements.storyContentDisplay.innerHTML = `<p style="text-align: center; color: var(--subtle-text-color); padding: 20px 0;">Fetching ${selectedIds.length} chapter(s)...</p>`; // Initial loading message
+        fetchedChapters = {}; // Clear previous fetched content
+        let successCount = 0;
+        const errorMessages = [];
+        const totalChapters = selectedIds.length;
+
+        // Get the part objects corresponding to selected IDs, maintaining original order
+        const partsToFetch = storyData.parts
+          .filter((p) => selectedIds.includes(String(p.id)))
+          .sort((a, b) => a.index - b.index); // Ensure fetch order matches display order
+
+        log.info(`Starting chapter fetch loop for ${partsToFetch.length} chapters.`);
+        DOMElements.storyContentDisplay.innerHTML = ''; // Clear loading message before adding content
+
+        for (let i = 0; i < partsToFetch.length; i++) {
+          const part = partsToFetch[i];
+          const partId = String(part.id);
+          const partIndex = part.index;
+          const titleDisplay = part.title || `Part ${partIndex}`;
+          const publishDate = part.createDate || null; // Get publish date
+          const progress = Math.round(((i + 1) / totalChapters) * 100);
+          showStatus(`⏳ Fetching ${i + 1}/${totalChapters} (${progress}%): "${titleDisplay.substring(0, 25)}..."`, 'info');
+
+          if (!partId) {
+            log.warn(`Invalid ID for part index ${partIndex}, skipping.`);
+            errorMessages.push(`Skipped part ${partIndex}: Invalid ID`);
+            displayChapterContent(partIndex, partIndex, titleDisplay, publishDate, '', true, 'Invalid Chapter ID'); // Display error placeholder
+            continue;
+          }
+
+          try {
+            const apiUrl = `${CONFIG.API_BASE}${partId}`;
+            const htmlContent = await fetchWithTimeout(apiUrl, `Chapter ${partId} Content`);
+            fetchedChapters[partId] = htmlContent; // Store fetched content
+            // Pass all required info to display function
+            displayChapterContent(partId, partIndex, titleDisplay, publishDate, htmlContent); // Display success content
+            successCount++;
+          } catch (error) {
+            log.error(`Error fetching chapter ${partId} ('${titleDisplay}'):`, error);
+            const msg = error.message.includes('abort') ? 'Fetch cancelled' : error.message;
+            errorMessages.push(`Chap ${partIndex} (ID:${partId}): ${msg}`);
+            // Pass all required info to display function, including error state
+            displayChapterContent(partId, partIndex, titleDisplay, publishDate, '', true, msg); // Display error placeholder
+          }
+        } // End fetch loop
+
+        // --- Final Status Update ---
+        if (errorMessages.length > 0) {
+          if (errorMessages.some((m) => m.includes('cancelled'))) {
+            showStatus(`⚠️ Fetch cancelled. Loaded ${successCount}/${totalChapters} chapters.`, 'info');
+          } else {
+            showStatus(
+              `⚠️ Completed with ${errorMessages.length} errors. Fetched ${successCount}/${totalChapters}. See content area / console for details.`,
+              'error'
+            );
+            log.warn(`Chapter fetch errors: ${errorMessages}`);
+          }
+        } else if (successCount > 0) {
+          showStatus(`✅ Successfully fetched ${successCount} chapter(s).`, 'success', 5000);
+        } else {
+          showStatus(`ℹ️ No chapters were fetched successfully.`, 'info');
+        }
+
+        setUIState('chaptersLoaded'); // Final state after fetching
+      });
+
+      DOMElements.copyMarkdownButton.addEventListener('click', async () => {
+        log.info('Copy Markdown button clicked.');
+        if (DOMElements.copyMarkdownButton.disabled || DOMElements.copyMarkdownButton.classList.contains('loading')) return;
+
+        DOMElements.copyMarkdownButton.disabled = true; // Prevent double clicks
+        DOMElements.copyMarkdownButton.classList.add('loading');
+        DOMElements.copyMarkdownButton.querySelector('span:not(.spinner)').textContent = '📋 Generating...';
+
+        // Allow UI to update before potentially heavy markdown generation
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
+        try {
+          const markdown = buildMarkdown();
+          if (!markdown) {
+            showStatus('ℹ️ No content fetched to copy.', 'info', 3000);
+            return; // Exit early
+          }
+
+          DOMElements.markdownOutput.value = markdown; // Put content in hidden textarea for fallback
+
+          log.info('Attempting to copy Markdown to clipboard...');
+          await navigator.clipboard.writeText(markdown);
+          log.info('Clipboard API copy successful.');
+          showStatus('✅ Markdown copied!', 'success', 2500);
+
+          // Visual feedback on button
+          const originalText = '📋 Copy Markdown';
+          DOMElements.copyMarkdownButton.querySelector('span:not(.spinner)').textContent = '✅ Copied!';
+          setTimeout(() => {
+            // Re-enable based on current state after timeout
+            setUIState(Object.keys(fetchedChapters).length > 0 ? 'chaptersLoaded' : 'metaLoaded');
+            // Restore text only after state is set (which might disable it again)
+            if (!DOMElements.copyMarkdownButton.disabled) {
+              DOMElements.copyMarkdownButton.querySelector('span:not(.spinner)').textContent = originalText;
+            }
+          }, 2500);
+        } catch (err) {
+          log.warn('Clipboard API copy failed, attempting fallback.', err);
+          try {
+            DOMElements.markdownOutput.select();
+            DOMElements.markdownOutput.setSelectionRange(0, 99999); // For mobile devices
+            document.execCommand('copy'); // Security restrictions might block this
+            log.info('Fallback copy (execCommand) successful.');
+            showStatus('✅ Copied (Fallback)!', 'success', 2500);
+            // Visual feedback
+            const originalText = '📋 Copy Markdown';
+            DOMElements.copyMarkdownButton.querySelector('span:not(.spinner)').textContent = '✅ Copied!';
+            setTimeout(() => {
+              setUIState(Object.keys(fetchedChapters).length > 0 ? 'chaptersLoaded' : 'metaLoaded');
+              if (!copyMarkdownButton.disabled) {
+                DOMElements.copyMarkdownButton.querySelector('span:not(.spinner)').textContent = originalText;
+              }
+            }, 2500);
+          } catch (fallErr) {
+            log.error('Fallback copy (execCommand) also failed.', fallErr);
+            showStatus(`❌ Auto-copy failed: ${err.message}. Try manual copy.`, 'error');
+            // Keep button text as 'Generating...' or switch to 'Copy Failed' ? Let's reset it on final state update.
+          }
+        } finally {
+          // Remove loading class immediately, but rely on the setTimeout/setUIState to handle re-enabling
+          DOMElements.copyMarkdownButton.classList.remove('loading');
+          // Ensure text is reset if timeout doesn't run or fails to re-enable
+          if (DOMElements.copyMarkdownButton.querySelector('span:not(.spinner)').textContent !== '✅ Copied!') {
+            DOMElements.copyMarkdownButton.querySelector('span:not(.spinner)').textContent = '📋 Copy Markdown';
+          }
+        }
+      });
+
+      DOMElements.applyRangeButton.addEventListener('click', () => {
+        log.info('Apply Range button clicked.');
+        const rangeStr = DOMElements.chapterRangeInput.value;
+        const maxIndex = storyData?.parts?.length ?? 0;
+        if (maxIndex === 0) {
+          showStatus('ℹ️ No chapters available to select range.', 'info', 3000);
+          return;
+        }
+
+        try {
+          clearStatus();
+          const indicesToSelect = parseChapterRange(rangeStr, maxIndex);
+
+          // Deselect all first
+          DOMElements.chapterList.querySelectorAll('.chapter-item-checkbox').forEach((cb) => (cb.checked = false));
+
+          // Select based on parsed indices
+          indicesToSelect.forEach((index) => {
+            const cb = DOMElements.chapterList.querySelector(`.chapter-item-checkbox[data-index="${index}"]`);
+            if (cb) cb.checked = true;
+          });
+
+          showStatus(`✅ Applied range. Selected ${indicesToSelect.length} chapters.`, 'success', 3000);
+          updateSelectAllState(); // Update the "Select All" checkbox state
+          log.info(`Applied range: ${indicesToSelect.length} selected.`);
+        } catch (error) {
+          showStatus(`❌ Range Error: ${error.message}`, 'error', 5000);
+          log.error('Error applying chapter range:', error);
+        }
+      });
+
+      // Update "Select All" checkbox state when individual chapters are checked/unchecked
+      DOMElements.chapterList.addEventListener('change', (event) => {
+        if (event.target.matches('.chapter-item-checkbox')) {
+          log.debug('Chapter checkbox changed.');
+          updateSelectAllState();
+        }
+      });
+
+      // Handle "Select All" checkbox clicks
+      DOMElements.selectAllCheckbox.addEventListener('change', (event) => {
+        log.debug(`Select All changed: ${event.target.checked}`);
+        const isChecked = event.target.checked;
+        DOMElements.chapterList.querySelectorAll('.chapter-item-checkbox').forEach((cb) => {
+          // Only change if it's not already in the desired state (avoids unnecessary events)
+          if (cb.checked !== isChecked) {
+            cb.checked = isChecked;
+          }
+        });
+        // After changing all, ensure the indeterminate state is correctly removed
+        DOMElements.selectAllCheckbox.indeterminate = false;
+      });
+
+      /** Syncs the "Select All" checkbox state (checked/indeterminate/unchecked) */
+      function updateSelectAllState() {
+        const allCheckboxes = DOMElements.chapterList.querySelectorAll('.chapter-item-checkbox');
+        if (allCheckboxes.length === 0) {
+          DOMElements.selectAllCheckbox.checked = false;
+          DOMElements.selectAllCheckbox.indeterminate = false;
+          return;
+        }
+        const checkedCount = DOMElements.chapterList.querySelectorAll('.chapter-item-checkbox:checked').length;
+
+        if (checkedCount === 0) {
+          DOMElements.selectAllCheckbox.checked = false;
+          DOMElements.selectAllCheckbox.indeterminate = false;
+        } else if (checkedCount === allCheckboxes.length) {
+          DOMElements.selectAllCheckbox.checked = true;
+          DOMElements.selectAllCheckbox.indeterminate = false;
+        } else {
+          DOMElements.selectAllCheckbox.checked = false; // Uncheck if partially selected
+          DOMElements.selectAllCheckbox.indeterminate = true; // Show indeterminate state
+        }
+        log.debug(
+          `Select All state updated: checked=${DOMElements.selectAllCheckbox.checked}, indeterminate=${DOMElements.selectAllCheckbox.indeterminate}`
+        );
+      }
+
+      /** Applies theme and saves preference */
+      function applyTheme(theme) {
+        DOMElements.htmlElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+        DOMElements.themeToggleButton.textContent = theme === 'dark' ? '☀️' : '🌙'; // Update icon
+        log.info(`Theme applied: ${theme}`);
+      }
+
+      // Theme toggle button
+      DOMElements.themeToggleButton.addEventListener('click', () => {
+        const currentTheme = DOMElements.htmlElement.getAttribute('data-theme') || 'dark'; // Default check to dark
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        log.info(`Toggling theme to: ${newTheme}`);
+        applyTheme(newTheme);
+      });
+
+      // ==== Initialization ====
+      function initialize() {
+
+        log.info('--- Wattpad Story Fetcher Initializing ---');
+        log.info('Verbose mode:', CONFIG.VERBOSE ? 'ENABLED' : 'DISABLED');
+
+        // Apply saved theme or default to dark
+        const savedTheme = localStorage.getItem('theme');
+        // Apply 'dark' if saved is 'dark' OR if nothing is saved. Apply 'light' only if saved is explicitly 'light'.
+        applyTheme(savedTheme === 'light' ? 'light' : 'dark');
+
+        // Initialize Turndown
+        if (typeof TurndownService !== 'undefined') {
+          turndownService = new TurndownService(CONFIG.TURNDOWN);
+          log.info('Turndown library initialized successfully.');
+        } else {
+          log.error('CRITICAL: Turndown library not loaded! Markdown export will fail.');
+          showStatus('❌ Error: Markdown converter library failed to load. Copy functionality disabled.', 'error');
+          DOMElements.copyMarkdownButton.disabled = true; // Keep disabled permanently if lib fails
+        }
+
+        // Set initial UI state
+        setUIState('idle');
+        clearStatus();
+
+        log.info('--- Initialization Complete ---');
+      }
+
+      // Run initialization when the DOM is fully loaded
+      document.addEventListener('DOMContentLoaded', initialize);
+    </script>
+  </body>
+</html>

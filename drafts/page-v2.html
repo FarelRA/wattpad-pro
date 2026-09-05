@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en" class="antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wattpad Fetcher & AI Enhancer</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+    
+    <!-- Turndown -->
+    <script src="https://unpkg.com/turndown/dist/turndown.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        wp: {
+                            orange: '#ff6600',
+                            hover: '#e65c00',
+                            light: '#ff8c4f',
+                            50: '#fff7ed',
+                            100: '#ffedd5',
+                            900: '#7c2d12'
+                        }
+                    },
+                    animation: {
+                        'slide-in': 'slideIn 0.3s ease-out',
+                        'fade-in': 'fadeIn 0.2s ease-out',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                    },
+                    keyframes: {
+                        slideIn: {
+                            '0%': { transform: 'translateY(-10px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' }
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        [x-cloak] { display: none !important; }
+        
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.2);
+            border-radius: 4px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0,0,0,0.3);
+        }
+        
+        /* Smooth transitions */
+        .transition-all-300 {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-300 min-h-screen font-sans selection:bg-wp-orange selection:text-white"
+      x-data="wattpadApp()" 
+      x-init="init()"
+      :class="{ 'dark': theme === 'dark' }">
+
+    <!-- Toast Notifications -->
+    <div class="fixed top-4 right-4 z-50 space-y-2 w-80 pointer-events-none">
+        <template x-for="toast in toasts" :key="toast.id">
+            <div x-show="toast.show" 
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="translate-x-full opacity-0"
+                 x-transition:enter-end="translate-x-0 opacity-100"
+                 x-transition:leave="transition ease-in duration-300"
+                 x-transition:leave-start="translate-x-0 opacity-100"
+                 x-transition:leave-end="translate-x-full opacity-0"
+                 class="pointer-events-auto p-4 rounded-xl shadow-lg border-l-4 flex items-start gap-3 backdrop-blur-sm"
+                 :class="{
+                     'bg-red-50 dark:bg-red-900/20 border-red-500 text-red-800 dark:text-red-200': toast.type === 'error',
+                     'bg-green-50 dark:bg-green-900/20 border-green-500 text-green-800 dark:text-green-200': toast.type === 'success',
+                     'bg-blue-50 dark:bg-blue-900/20 border-blue-500 text-blue-800 dark:text-blue-200': toast.type === 'info'
+                 }">
+                <i data-lucide="alert-circle" x-show="toast.type === 'error'" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
+                <i data-lucide="check-circle" x-show="toast.type === 'success'" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
+                <i data-lucide="info" x-show="toast.type === 'info'" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
+                <p class="text-sm font-medium" x-text="toast.message"></p>
+                <button @click="dismissToast(toast.id)" class="ml-auto hover:opacity-70">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </template>
+    </div>
+
+    <!-- Header -->
+    <header class="sticky top-0 z-40 backdrop-blur-lg bg-white/80 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-800 transition-all duration-300">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-wp-orange to-red-600 flex items-center justify-center text-white shadow-lg shadow-wp-orange/20">
+                    <i data-lucide="book-open" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-wp-orange to-red-600">Wattpad Fetcher</h1>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">AI Story Enhancer</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <button @click="toggleTheme()" 
+                        class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 text-gray-600 dark:text-gray-300"
+                        :aria-label="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
+                    <i data-lucide="sun" x-show="theme === 'dark'" class="w-5 h-5"></i>
+                    <i data-lucide="moon" x-show="theme === 'light'" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+        <!-- Input Section -->
+        <section class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 space-y-4">
+            <div class="grid gap-4 md:grid-cols-2">
+                <!-- URL Input -->
+                <div class="space-y-2">
+                    <label class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        <i data-lucide="link" class="w-4 h-4 text-wp-orange"></i>
+                        Story URL
+                    </label>
+                    <div class="relative">
+                        <input type="text" 
+                               x-model="storyUrl" 
+                               @keyup.enter="fetchMetadata()"
+                               placeholder="https://www.wattpad.com/story/..."
+                               class="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:border-wp-orange focus:ring-2 focus:ring-wp-orange/20 outline-none transition-all duration-200 dark:text-white placeholder-gray-400"
+                               :disabled="loading.meta">
+                        <i data-lucide="link-2" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"></i>
+                    </div>
+                </div>
+
+                <!-- API Key Input -->
+                <div class="space-y-2">
+                    <label class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        <i data-lucide="key" class="w-4 h-4 text-blue-500"></i>
+                        Gemini API Key
+                    </label>
+                    <div class="relative group">
+                        <input :type="showApiKey ? 'text' : 'password'" 
+                               x-model="apiKey"
+                               @input="saveApiKey()"
+                               placeholder="AIzaSy..."
+                               class="w-full pl-10 pr-10 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all duration-200 dark:text-white placeholder-gray-400 font-mono text-sm">
+                        <i data-lucide="lock" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"></i>
+                        <button @click="showApiKey = !showApiKey" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                            <i data-lucide="eye" x-show="!showApiKey" class="w-5 h-5"></i>
+                            <i data-lucide="eye-off" x-show="showApiKey" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fetch Button -->
+            <button @click="fetchMetadata()" 
+                    :disabled="loading.meta || !storyUrl"
+                    class="w-full md:w-auto px-6 py-3 bg-wp-orange hover:bg-wp-hover disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-xl font-semibold shadow-lg shadow-wp-orange/25 hover:shadow-xl hover:shadow-wp-orange/30 transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 min-w-[160px]">
+                <i data-lucide="loader-2" x-show="loading.meta" class="w-5 h-5 animate-spin"></i>
+                <i data-lucide="download" x-show="!loading.meta" class="w-5 h-5"></i>
+                    <span x-text="loading.meta ? 'Fetching...' : 'Fetch Story Info'"></span>
+            </button>
+        </section>
+
+        <!-- Story Metadata Card -->
+        <section x-show="storyData" x-collapse x-cloak class="animate-fade-in">
+            <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+                <div class="md:flex">
+                    <!-- Cover Image -->
+                    <div class="md:w-48 h-64 md:h-auto relative bg-gray-100 dark:bg-gray-800 flex-shrink-0">
+                        <img x-show="storyData?.cover" :src="storyData?.cover" class="w-full h-full object-cover" alt="Cover">
+                        <div x-show="!storyData?.cover" class="w-full h-full flex items-center justify-center text-gray-400">
+                            <i data-lucide="image" class="w-12 h-12"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Info -->
+                    <div class="p-6 flex-1 space-y-4">
+                        <div>
+                            <h2 x-text="storyData?.title" class="text-2xl font-bold text-gray-900 dark:text-white mb-1"></h2>
+                            <a :href="storyData?.url" target="_blank" class="text-wp-orange hover:text-wp-hover text-sm font-medium inline-flex items-center gap-1 transition-colors">
+                                View on Wattpad
+                                <i data-lucide="external-link" class="w-3 h-3"></i>
+                            </a>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-4 text-sm">
+                            <div class="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full">
+                                <img x-show="storyData?.author?.avatar" :src="storyData?.author?.avatar" class="w-5 h-5 rounded-full object-cover">
+                                <i x-show="!storyData?.author?.avatar" data-lucide="user" class="w-4 h-4 text-gray-500"></i>
+                                <span x-text="storyData?.author?.fullname" class="font-medium text-gray-700 dark:text-gray-300"></span>
+                                <span x-show="storyData?.author?.username !== storyData?.author?.fullname" 
+                                      x-text="'@' + storyData?.author?.username" 
+                                      class="text-gray-500 dark:text-gray-400"></span>
+                            </div>
+                            
+                            <span class="px-3 py-1.5 rounded-full text-xs font-bold"
+                                  :class="storyData?.completed ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'"
+                                  x-text="storyData?.completed ? '✓ Completed' : '⏳ Ongoing'">
+                            </span>
+                        </div>
+
+                        <p x-text="storyData?.description" class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed line-clamp-3"></p>
+
+                        <!-- Stats Grid -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-200 dark:border-gray-800">
+                            <div class="text-center">
+                                <div x-text="storyData?.stats?.reads" class="text-xl font-bold text-gray-900 dark:text-white"></div>
+                                <div class="text-xs text-gray-500 uppercase tracking-wide">Reads</div>
+                            </div>
+                            <div class="text-center">
+                                <div x-text="storyData?.stats?.votes" class="text-xl font-bold text-gray-900 dark:text-white"></div>
+                                <div class="text-xs text-gray-500 uppercase tracking-wide">Votes</div>
+                            </div>
+                            <div class="text-center">
+                                <div x-text="storyData?.stats?.parts" class="text-xl font-bold text-gray-900 dark:text-white"></div>
+                                <div class="text-xs text-gray-500 uppercase tracking-wide">Parts</div>
+                            </div>
+                            <div class="text-center">
+                                <div x-text="storyData?.copyright" class="text-xl font-bold text-gray-900 dark:text-white text-sm truncate"></div>
+                                <div class="text-xs text-gray-500 uppercase tracking-wide">Copyright</div>
+                            </div>
+                        </div>
+
+                        <!-- Tags -->
+                        <div x-show="storyData?.tags?.length" class="flex flex-wrap gap-2 pt-2">
+                            <template x-for="tag in storyData?.tags" :key="tag">
+                                <span class="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs rounded-full font-medium" x-text="tag"></span>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Chapter Selection -->
+        <section x-show="chapters.length > 0" x-collapse x-cloak class="space-y-4 animate-fade-in">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <i data-lucide="list" class="w-5 h-5 text-wp-orange"></i>
+                        Chapters
+                    </h3>
+                    <span class="px-2.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-bold rounded-full" x-text="selectedChapters.length + '/' + chapters.length"></span>
+                </div>
+                
+                <div class="flex flex-wrap items-center gap-2">
+                    <label class="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors select-none">
+                        <input type="checkbox" 
+                               :checked="selectedChapters.length === chapters.length" 
+                               @change="toggleSelectAll($event.target.checked)" 
+                               class="w-4 h-4 rounded border-gray-300 text-wp-orange focus:ring-wp-orange dark:border-gray-600 dark:bg-gray-700">
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Select All</span>
+                    </label>
+                    
+                    <div class="flex items-center gap-2">
+                        <input type="text" 
+                               x-model="chapterRange" 
+                               placeholder="1-5, 8, 11" 
+                               class="w-32 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:border-wp-orange focus:ring-1 focus:ring-wp-orange outline-none dark:text-white"
+                               @keyup.enter="applyRange()">
+                        <button @click="applyRange()" 
+                                class="px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors">
+                            Apply
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chapter List -->
+            <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden max-h-[600px] overflow-y-auto">
+                <div class="divide-y divide-gray-100 dark:divide-gray-800">
+                    <template x-for="chapter in chapters" :key="chapter.id">
+                        <div class="group flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                             :class="{ 'bg-blue-50/50 dark:bg-blue-900/10': selectedChapters.includes(String(chapter.id)) }">
+                            <input type="checkbox" 
+                                   :value="String(chapter.id)" 
+                                   x-model="selectedChapters"
+                                   class="w-5 h-5 rounded border-gray-300 text-wp-orange focus:ring-wp-orange dark:border-gray-600 dark:bg-gray-700"
+                                   :id="'chk-'+chapter.id">
+                            
+                            <div class="flex-1 min-w-0 cursor-pointer" @click="toggleChapter(String(chapter.id))">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-xs font-bold text-wp-orange" x-text="'#' + chapter.index"></span>
+                                    <h4 class="font-semibold text-gray-900 dark:text-white truncate" x-text="chapter.title"></h4>
+                                </div>
+                                <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                                    <span x-text="chapter.createDate || 'Date unknown'"></span>
+                                    <span class="w-1 h-1 rounded-full bg-gray-300"></span>
+                                    <span class="font-mono" x-text="'ID: ' + chapter.id"></span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <span x-show="fetchedChapters[chapter.id]" class="p-1.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg">
+                                    <i data-lucide="check" class="w-4 h-4"></i>
+                                </span>
+                                <span x-show="rewrittenChapters[chapter.id]" class="p-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg" title="AI Enhanced">
+                                    <i data-lucide="sparkles" class="w-4 h-4"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Action Bar -->
+            <div class="flex flex-wrap gap-3 sticky bottom-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg p-4 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800 z-30">
+                <button @click="fetchSelectedChapters()" 
+                        :disabled="loading.chapters || selectedChapters.length === 0"
+                        class="flex-1 sm:flex-none px-6 py-3 bg-wp-orange hover:bg-wp-hover disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-xl font-semibold shadow-lg shadow-wp-orange/25 hover:shadow-xl hover:shadow-wp-orange/30 transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2">
+                    <i data-lucide="loader-2" x-show="loading.chapters" class="w-5 h-5 animate-spin"></i>
+                    <i data-lucide="download-cloud" x-show="!loading.chapters" class="w-5 h-5"></i>
+                    <span x-text="loading.chapters ? 'Fetching...' : 'Fetch Selected (' + selectedChapters.length + ')'"></span>
+                </button>
+
+                <!-- AI Rewrite Dropdown -->
+                <div class="relative" x-data="{ open: false }">
+                    <div class="flex rounded-xl overflow-hidden shadow-lg shadow-blue-500/20">
+                        <button @click="rewriteChapters()" 
+                                :disabled="loading.rewrite || selectedChapters.length === 0 || !apiKey"
+                                class="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-semibold flex items-center gap-2 transition-colors">
+                            <i data-lucide="loader-2" x-show="loading.rewrite" class="w-5 h-5 animate-spin"></i>
+                            <i data-lucide="wand-2" x-show="!loading.rewrite" class="w-5 h-5"></i>
+                            <span x-text="loading.rewrite ? 'Rewriting...' : prompts[currentPrompt].name"></span>
+                        </button>
+                        <button @click="open = !open" 
+                                class="px-3 py-3 bg-blue-700 hover:bg-blue-800 text-white border-l border-blue-500 transition-colors">
+                            <i data-lucide="chevron-down" class="w-5 h-5" :class="{ 'rotate-180': open }"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Dropdown Menu -->
+                    <div x-show="open" 
+                         @click.away="open = false"
+                         x-transition:enter="transition ease-out duration-100"
+                         x-transition:enter-start="transform opacity-0 scale-95"
+                         x-transition:enter-end="transform opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-75"
+                         x-transition:leave-start="transform opacity-100 scale-100"
+                         x-transition:leave-end="transform opacity-0 scale-95"
+                         class="absolute bottom-full mb-2 left-0 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50">
+                        <template x-for="(prompt, key) in prompts" :key="key">
+                            <button @click="currentPrompt = key; open = false" 
+                                    class="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors"
+                                    :class="{ 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400': currentPrompt === key }">
+                                <span x-text="prompt.icon" class="text-lg"></span>
+                                <div>
+                                    <div class="font-semibold text-sm" x-text="prompt.name"></div>
+                                </div>
+                                <i x-show="currentPrompt === key" data-lucide="check" class="w-4 h-4 ml-auto"></i>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <button @click="copyMarkdown()" 
+                        :disabled="Object.keys(fetchedChapters).length === 0"
+                        class="px-6 py-3 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-white dark:text-gray-900 rounded-xl font-semibold shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2 ml-auto">
+                    <i data-lucide="clipboard" class="w-5 h-5"></i>
+                    <span>Copy Markdown</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Content Display -->
+        <section x-show="Object.keys(fetchedChapters).length > 0" x-collapse x-cloak class="space-y-4">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="file-text" class="w-6 h-6 text-wp-orange"></i>
+                Content Preview
+            </h3>
+            
+            <div class="space-y-4">
+                <template x-for="chapter in chapters.filter(c => fetchedChapters[c.id] || rewrittenChapters[c.id])" :key="chapter.id">
+                    <article class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+                        <div class="p-6 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="px-2 py-0.5 bg-wp-orange/10 dark:bg-wp-orange/20 text-wp-orange text-xs font-bold rounded">Part <span x-text="chapter.index"></span></span>
+                                        <h3 class="text-lg font-bold text-gray-900 dark:text-white" x-text="chapter.title"></h3>
+                                    </div>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400" x-text="chapter.createDate"></p>
+                                </div>
+                                <span x-show="rewrittenChapters[chapter.id]" class="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-bold rounded-full flex items-center gap-1">
+                                    <i data-lucide="sparkles" class="w-3 h-3"></i>
+                                    AI Enhanced
+                                </span>
+                            </div>
+                        </div>
+                        <div class="p-6 prose dark:prose-invert max-w-none">
+                            <div class="text-gray-800 dark:text-gray-200 leading-relaxed" x-html="rewrittenChapters[chapter.id] || fetchedChapters[chapter.id]"></div>
+                        </div>
+                    </article>
+                </template>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        function wattpadApp() {
+            return {
+                // State
+                theme: localStorage.getItem('theme') || 'dark',
+                storyUrl: '',
+                apiKey: localStorage.getItem('wp_api_key') || '',
+                showApiKey: false,
+                storyData: null,
+                chapters: [],
+                fetchedChapters: {},
+                rewrittenChapters: {},
+                selectedChapters: [],
+                currentPrompt: 'proofread',
+                chapterRange: '',
+                loading: {
+                    meta: false,
+                    chapters: false,
+                    rewrite: false
+                },
+                toasts: [],
+                turndownService: null,
+
+                // Config
+                corsProxy: 'https://flare.farel.is-a.dev/conduit/?url=',
+                apiBase: 'https://www.wattpad.com/apiv2/storytext?id=',
+                geminiBase: 'https://generativelanguage.googleapis.com/v1beta/models/',
+                
+                prompts: {
+                    proofread: {
+                        name: 'Proofread & Fix',
+                        icon: '✏️',
+                        prompt: 'Please proofread the following HTML content for any grammatical errors, spelling mistakes, and typos. Correct them to improve clarity and readability. Ensure the output is valid HTML and preserves the original tags and structure, only modifying the text content where necessary. Do not change the original style or voice. Output only the modified HTML.'
+                    },
+                    enhance: {
+                        name: 'Enhance Descriptions',
+                        icon: '✨',
+                        prompt: 'Rewrite the following chapter, provided as HTML content, to be more descriptive and engaging. Enhance the sensory details (sight, sound, smell, touch, taste) and improve the pacing. Make the characters\' emotions more palpable. The output must be valid HTML, preserving the original structure and tags, only modifying the text content. Output only the modified HTML.'
+                    },
+                    simplify: {
+                        name: 'Shorten & Summary',
+                        icon: '📝',
+                        prompt: 'Summarize the following chapter, provided as HTML content, into one short sentence. Output only the summary.'
+                    }
+                },
+
+                init() {
+                    this.$watch('theme', val => {
+                        localStorage.setItem('theme', val);
+                        if (val === 'dark') {
+                            document.documentElement.classList.add('dark');
+                        } else {
+                            document.documentElement.classList.remove('dark');
+                        }
+                    });
+                    
+                    // Initialize dark mode class
+                    if (this.theme === 'dark') {
+                        document.documentElement.classList.add('dark');
+                    }
+
+                    // Init Turndown
+                    if (typeof TurndownService !== 'undefined') {
+                        this.turndownService = new TurndownService({
+                            headingStyle: 'atx',
+                            hr: '---',
+                            bulletListMarker: '*',
+                            codeBlockStyle: 'fenced',
+                            emDelimiter: '_',
+                            strongDelimiter: '**'
+                        });
+                    }
+
+                    // Re-init icons after DOM updates
+                    this.$nextTick(() => {
+                        lucide.createIcons();
+                    });
+                },
+
+                saveApiKey() {
+                    localStorage.setItem('wp_api_key', this.apiKey);
+                },
+
+                toggleTheme() {
+                    this.theme = this.theme === 'dark' ? 'light' : 'dark';
+                },
+
+                showToast(message, type = 'info', duration = 5000) {
+                    const id = Date.now();
+                    this.toasts.push({ id, message, type, show: true });
+                    setTimeout(() => {
+                        this.dismissToast(id);
+                    }, duration);
+                    this.$nextTick(() => lucide.createIcons());
+                },
+
+                dismissToast(id) {
+                    const toast = this.toasts.find(t => t.id === id);
+                    if (toast) toast.show = false;
+                    setTimeout(() => {
+                        this.toasts = this.toasts.filter(t => t.id !== id);
+                    }, 300);
+                },
+
+                async fetchWithTimeout(url, type = 'fetch', options = {}, useProxy = true, timeout = 10000) {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), timeout);
+                    
+                    try {
+                        const finalUrl = useProxy ? `${this.corsProxy}${encodeURIComponent(url)}` : url;
+                        const response = await fetch(finalUrl, {
+                            ...options,
+                            signal: controller.signal,
+                            headers: { 'X-Requested-With': 'XMLHttpRequest', ...options.headers }
+                        });
+                        clearTimeout(timeoutId);
+                        
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        
+                        return options.headers?.['Content-Type'] === 'application/json' 
+                            ? await response.json() 
+                            : await response.text();
+                    } catch (error) {
+                        clearTimeout(timeoutId);
+                        throw error;
+                    }
+                },
+
+                extractStoryId(url) {
+                    return url?.match(/\/story\/(\d+)/)?.[1] ?? null;
+                },
+
+                extractPartId(url) {
+                    return url?.match(/\/(\d+)-/)?.[1] ?? null;
+                },
+
+                async fetchMetadata() {
+                    if (!this.storyUrl.includes('wattpad.com/story/')) {
+                        this.showToast('Please enter a valid Wattpad Story URL', 'error');
+                        return;
+                    }
+
+                    this.loading.meta = true;
+                    this.resetData();
+                    
+                    try {
+                        const html = await this.fetchWithTimeout(this.storyUrl, 'Story Page');
+                        this.parseStoryPage(html);
+                        this.showToast(`Loaded "${this.storyData.title}"`, 'success');
+                    } catch (error) {
+                        this.showToast(`Error: ${error.message}`, 'error');
+                    } finally {
+                        this.loading.meta = false;
+                        this.$nextTick(() => lucide.createIcons());
+                    }
+                },
+
+                parseStoryPage(html) {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    // Helper
+                    const query = (selectors) => {
+                        const list = Array.isArray(selectors) ? selectors : [selectors];
+                        for (const s of list) {
+                            const el = doc.querySelector(s);
+                            if (el) return el;
+                        }
+                        return null;
+                    };
+                    
+                    const queryAll = (selectors) => {
+                        const list = Array.isArray(selectors) ? selectors : [selectors];
+                        for (const s of list) {
+                            const els = doc.querySelectorAll(s);
+                            if (els.length) return els;
+                        }
+                        return [];
+                    };
+
+                    const titleParts = (doc.querySelector('head > title')?.textContent || '').split(' - ');
+                    const authorContainer = doc.querySelector('div[data-testid="story-badges"]');
+                    
+                    this.storyData = {
+                        title: titleParts[0]?.trim() || 'Untitled',
+                        url: this.storyUrl,
+                        id: this.extractStoryId(this.storyUrl),
+                        author: {
+                            fullname: titleParts[1]?.trim() || 'Unknown',
+                            username: authorContainer?.querySelector('a[href*="/user/"]')?.textContent?.trim() || 'Unknown',
+                            avatar: authorContainer?.querySelector('img[src*="/useravatar/"]')?.src || null,
+                            profileUrl: authorContainer?.querySelector('a[href*="/user/"]')?.href || null
+                        },
+                        cover: doc.querySelector('img[data-testid="image"]')?.src || null,
+                        description: doc.querySelector('pre.mpshL._6pPkw')?.textContent?.trim() || '',
+                        copyright: doc.querySelector('div[data-testid="copyright"]')?.textContent?.trim() || 'Unknown',
+                        completed: (doc.querySelector('div[data-testid="completed-tag"] span')?.textContent || '').toLowerCase().includes('complete'),
+                        tags: Array.from(new Set(Array.from(doc.querySelectorAll('div[data-testid="tag-carousel"] a span')).map(el => el.textContent?.trim()).filter(Boolean))),
+                        stats: { reads: 'N/A', votes: 'N/A', parts: 'N/A', time: 'N/A' }
+                    };
+
+                    // Parse stats
+                    doc.querySelectorAll('ul.n0iXe li').forEach(item => {
+                        const label = item.querySelector('span:not([data-testid="stats-value"])')?.textContent?.toLowerCase() || '';
+                        const value = item.querySelector('span[data-testid="stats-value"]')?.textContent;
+                        if (!value) return;
+                        if (label.includes('read')) this.storyData.stats.reads = value;
+                        else if (label.includes('vote')) this.storyData.stats.votes = value;
+                        else if (label.includes('part')) this.storyData.stats.parts = value;
+                        else if (label.includes('time')) this.storyData.stats.time = value;
+                    });
+
+                    // Parse chapters
+                    this.chapters = [];
+                    const toc = doc.querySelector('div[data-testid="toc"]');
+                    if (toc) {
+                        toc.querySelectorAll('a[href*="/www.wattpad.com/"]').forEach((link, idx) => {
+                            const url = new URL(link.getAttribute('href'), this.storyUrl).href;
+                            const id = this.extractPartId(url);
+                            if (id) {
+                                this.chapters.push({
+                                    id: id,
+                                    index: idx + 1,
+                                    title: link.querySelector('.wpYp-')?.textContent?.trim() || `Part ${idx + 1}`,
+                                    createDate: link.querySelector('.bSGSB')?.textContent?.trim() || null,
+                                    url: url
+                                });
+                            }
+                        });
+                    }
+                    
+                    if (this.chapters.length > 0) {
+                        this.storyData.stats.parts = this.chapters.length.toString();
+                    }
+                },
+
+                resetData() {
+                    this.storyData = null;
+                    this.chapters = [];
+                    this.fetchedChapters = {};
+                    this.rewrittenChapters = {};
+                    this.selectedChapters = [];
+                },
+
+                toggleSelectAll(checked) {
+                    this.selectedChapters = checked ? this.chapters.map(c => String(c.id)) : [];
+                },
+
+                toggleChapter(id) {
+                    if (this.selectedChapters.includes(id)) {
+                        this.selectedChapters = this.selectedChapters.filter(c => c !== id);
+                    } else {
+                        this.selectedChapters.push(id);
+                    }
+                },
+
+                applyRange() {
+                    try {
+                        const max = this.chapters.length;
+                        const indices = new Set();
+                        
+                        for (const part of this.chapterRange.split(',')) {
+                            const trimmed = part.trim();
+                            if (!trimmed) continue;
+                            
+                            if (trimmed.includes('-')) {
+                                const [start, end] = trimmed.split('-').map(s => parseInt(s));
+                                if (isNaN(start) || isNaN(end) || start < 1 || end > max || start > end) {
+                                    throw new Error(`Invalid range: ${trimmed}`);
+                                }
+                                for (let i = start; i <= end; i++) indices.add(i);
+                            } else {
+                                const index = parseInt(trimmed);
+                                if (isNaN(index) || index < 1 || index > max) {
+                                    throw new Error(`Invalid chapter: ${trimmed}`);
+                                }
+                                indices.add(index);
+                            }
+                        }
+                        
+                        this.selectedChapters = this.chapters
+                            .filter(c => indices.has(c.index))
+                            .map(c => String(c.id));
+                            
+                        this.showToast(`Selected ${indices.size} chapters`, 'success');
+                    } catch (e) {
+                        this.showToast(e.message, 'error');
+                    }
+                },
+
+                async fetchSelectedChapters() {
+                    if (this.selectedChapters.length === 0) {
+                        this.showToast('Please select chapters first', 'info');
+                        return;
+                    }
+
+                    this.loading.chapters = true;
+                    let success = 0;
+                    let failed = 0;
+
+                    for (const id of this.selectedChapters) {
+                        try {
+                            this.showToast(`Fetching ${this.chapters.find(c => c.id === id)?.title?.substring(0, 20)}...`, 'info', 1000);
+                            const content = await this.fetchWithTimeout(`${this.apiBase}${id}`, 'Chapter');
+                            this.fetchedChapters[id] = content;
+                            success++;
+                        } catch (e) {
+                            this.fetchedChapters[id] = `<div class="text-red-500">Error loading chapter: ${e.message}</div>`;
+                            failed++;
+                        }
+                    }
+
+                    this.showToast(`Fetched ${success} chapters${failed > 0 ? `, ${failed} failed` : ''}`, failed > 0 ? 'error' : 'success');
+                    this.loading.chapters = false;
+                    this.$nextTick(() => lucide.createIcons());
+                },
+
+                async rewriteChapters() {
+                    if (!this.apiKey) {
+                        this.showToast('Please enter your Gemini API key', 'error');
+                        return;
+                    }
+                    if (this.selectedChapters.length === 0) {
+                        this.showToast('Please select chapters to rewrite', 'error');
+                        return;
+                    }
+
+                    this.loading.rewrite = true;
+                    const prompt = this.prompts[this.currentPrompt].prompt;
+                    let success = 0;
+                    let failed = 0;
+
+                    for (const id of this.selectedChapters) {
+                        if (!this.fetchedChapters[id]) continue;
+                        
+                        try {
+                            const chapter = this.chapters.find(c => c.id === id);
+                            this.showToast(`Rewriting ${chapter?.title?.substring(0, 20)}...`, 'info', 1500);
+                            
+                            const response = await fetch(`${this.geminiBase}gemini-2.5-flash:generateContent?key=${this.apiKey}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    contents: [{
+                                        parts: [
+                                            { text: `Original HTML chapter:\n${this.fetchedChapters[id]}` },
+                                            { text: prompt }
+                                        ]
+                                    }]
+                                })
+                            });
+                            
+                            const data = await response.json();
+                            if (data.error) throw new Error(data.error.message);
+                            
+                            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                            if (!text) throw new Error('No content returned');
+                            
+                            this.rewrittenChapters[id] = text;
+                            success++;
+                        } catch (e) {
+                            console.error('Rewrite error:', e);
+                            failed++;
+                        }
+                    }
+
+                    this.showToast(`Rewritten ${success} chapters${failed > 0 ? `, ${failed} failed` : ''}`, failed > 0 ? 'error' : 'success');
+                    this.loading.rewrite = false;
+                    this.$nextTick(() => lucide.createIcons());
+                },
+
+                copyMarkdown() {
+                    if (!this.turndownService) {
+                        this.showToast('Markdown converter not loaded', 'error');
+                        return;
+                    }
+
+                    const lines = [];
+                    lines.push(`# ${this.storyData?.title || 'Story'}\n`);
+                    lines.push(`**Author:** ${this.storyData?.author?.fullname}\n`);
+                    lines.push(`**URL:** ${this.storyData?.url}\n\n---\n`);
+
+                    for (const chapter of this.chapters) {
+                        if (!this.fetchedChapters[chapter.id] && !this.rewrittenChapters[chapter.id]) continue;
+                        
+                        const content = this.rewrittenChapters[chapter.id] || this.fetchedChapters[chapter.id];
+                        const title = chapter.title + (this.rewrittenChapters[chapter.id] ? ' (AI Enhanced)' : '');
+                        
+                        lines.push(`\n## ${title}\n`);
+                        try {
+                            lines.push(this.turndownService.turndown(content));
+                        } catch (e) {
+                            lines.push(content.replace(/<[^>]*>/g, '')); // Strip HTML as fallback
+                        }
+                        lines.push('\n---\n');
+                    }
+
+                    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+                        this.showToast('Markdown copied to clipboard!', 'success');
+                    }).catch(() => {
+                        this.showToast('Failed to copy to clipboard', 'error');
+                    });
+                }
+            }
+        }
+    </script>
+</body>
+</html>

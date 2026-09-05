@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="en" x-data="themeHandler()" :class="{ 'dark': isDark }">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wattpad Pro</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="output.css">
+
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@latest/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@latest/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/turndown@latest/dist/turndown.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@latest/dist/purify.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #f4f5f7;
+            --text-color: #2c3e50;
+            --secondary-bg-color: #ffffff;
+            --input-bg-color: #ffffff;
+            --input-border-color: #dcdfe6;
+            --heading-color: #34495e;
+            --subtle-text-color: #8492a6;
+            --separator-color: #e4e7ed;
+            --card-border: #e4e7ed;
+            --card-bg: #ffffff;
+            --success-bg: #f0f9eb;
+            --success-text: #67c23a;
+            --success-border: #e1f3d8;
+            --error-bg: #fef0f0;
+            --error-text: #f56c6c;
+            --error-border: #fde2e2;
+            --button-muted-bg: #f4f4f5;
+            --button-muted-text: #909399;
+            --button-muted-border: #e9e9eb;
+            --info-bg: #ffedd5;
+            --info-text: #c2410c;
+            --info-border: #fdba74;
+            --tag-bg: #fff7ed;
+            --tag-text: #ea580c;
+            --tag-border: #fed7aa;
+        }
+
+        .dark {
+            --bg-color: #1c1e21;
+            --text-color: #e4e6eb;
+            --secondary-bg-color: #242526;
+            --input-bg-color: #3a3b3c;
+            --input-border-color: #4b4d4f;
+            --heading-color: #ccd0d5;
+            --subtle-text-color: #a0a3a8;
+            --separator-color: #3e4042;
+            --card-border: #3e4042;
+            --card-bg: #2d2e2f;
+            --success-bg: #2a4a2a;
+            --success-text: #aaffee;
+            --success-border: #4a8a4a;
+            --error-bg: #3a2a2a;
+            --error-text: #f2aaaa;
+            --error-border: #5a3a3a;
+            --button-muted-bg: #3a3a3a;
+            --button-muted-text: #b0b3b8;
+            --button-muted-border: #555;
+            --info-bg: rgba(255, 102, 0, 0.15);
+            --info-text: #fdba74;
+            --info-border: rgba(255, 166, 77, 0.28);
+            --tag-bg: rgba(255, 102, 0, 0.10);
+            --tag-text: #ffcf99;
+            --tag-border: rgba(255, 166, 77, 0.2);
+        }
+
+        /* Custom scrollbar for better aesthetics */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #4b5563; }
+        .chapter-checkbox {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 1.25rem;
+            height: 1.25rem;
+            border-radius: 0.375rem;
+            border: 1.5px solid var(--input-border-color);
+            background: var(--secondary-bg-color);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+        }
+        .chapter-checkbox:checked {
+            background: #ff6600;
+            border-color: #ff6600;
+            box-shadow: 0 0 0 3px color-mix(in srgb, #ff6600 18%, transparent);
+        }
+        .chapter-checkbox:checked::after {
+            content: '';
+            width: 0.3rem;
+            height: 0.55rem;
+            border-right: 2px solid #fff;
+            border-bottom: 2px solid #fff;
+            transform: rotate(45deg) translate(-1px, -1px);
+        }
+        .chapter-checkbox:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px color-mix(in srgb, #ff6600 20%, transparent);
+        }
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-[var(--bg-color)] text-[var(--text-color)] min-h-screen transition-colors duration-200 antialiased font-sans p-4 sm:p-6 lg:p-8 relative" x-data="wattpadApp()">
+    
+    <div x-show="toast.visible" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 translate-y-2" class="fixed top-3 left-3 right-3 sm:top-4 sm:left-auto sm:right-4 sm:max-w-md z-50 px-4 py-3 rounded-lg shadow-xl flex items-center gap-3 border" :class="toast.type === 'error' ? 'bg-[var(--error-bg)] text-[var(--error-text)] border-[var(--error-border)]' : 'bg-[var(--success-bg)] text-[var(--success-text)] border-[var(--success-border)]'" x-cloak>
+        <i :data-lucide="toast.type === 'error' ? 'alert-circle' : 'check-circle'" class="w-5 h-5"></i>
+        <span x-text="toast.message" class="font-medium text-sm"></span>
+    </div>
+
+    <div class="max-w-5xl mx-auto space-y-6">
+        
+        <header class="flex items-center justify-between gap-4 bg-[var(--secondary-bg-color)] rounded-2xl shadow-sm border border-[var(--card-border)] p-5 sm:p-6">
+            <div class="flex items-center gap-3">
+                <div class="bg-primary-100/90 dark:bg-primary-500/15 p-2 rounded-lg text-primary-600 dark:text-primary-500">
+                    <i data-lucide="book-open-check"></i>
+                </div>
+                <h1 class="text-xl sm:text-2xl font-bold text-[var(--heading-color)]">Wattpad <span class="text-primary-500">Pro</span></h1>
+            </div>
+            <button @click="toggleTheme()" class="p-2.5 rounded-xl bg-[var(--input-bg-color)] text-[var(--text-color)] hover:bg-black/5 dark:hover:bg-white/10 transition-colors border border-[var(--card-border)]">
+                <i data-lucide="sun" x-show="isDark" class="w-5 h-5"></i>
+                <i data-lucide="moon" x-show="!isDark" class="w-5 h-5"></i>
+            </button>
+        </header>
+
+        <section class="bg-[var(--secondary-bg-color)] rounded-2xl shadow-sm border border-[var(--card-border)] p-6 space-y-6">
+            <div>
+                <label class="block text-sm font-semibold text-[var(--subtle-text-color)] mb-2">
+                    <i data-lucide="link" class="w-4 h-4 text-primary-600 inline mr-1"></i> Wattpad URL
+                </label>
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <input type="text" x-model="url" :disabled="isLoadingAny" @keydown.enter="fetchMetadata()" placeholder="https://www.wattpad.com/story/..." class="flex-1 px-4 py-3 bg-[var(--input-bg-color)] border border-[var(--input-border-color)] rounded-xl text-[var(--text-color)] focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:opacity-50 transition-all" />
+                    <button @click="fetchMetadata()" :disabled="isLoadingAny || !url" class="sm:w-auto bg-primary-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-primary-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-all whitespace-nowrap shadow-md hover:shadow-lg">
+                        <i data-lucide="search" class="w-4 h-4" x-show="uiState !== 'loadingMeta'"></i>
+                        <i data-lucide="loader-2" class="w-4 h-4 animate-spin" x-show="uiState === 'loadingMeta'"></i>
+                        <span x-text="uiState === 'loadingMeta' ? 'Fetching...' : 'Analyze'"></span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="border-t border-[var(--separator-color)] pt-4">
+                <div class="flex items-center gap-2 mb-3 cursor-pointer select-none" @click="showAi = !showAi">
+                    <i data-lucide="bot" class="w-4 h-4 text-primary-600"></i>
+                    <span class="text-xs font-bold uppercase tracking-wider text-[var(--subtle-text-color)] hover:text-primary-600 transition-colors">AI & API Configuration</span>
+                    <i data-lucide="chevron-down" class="w-3 h-3 text-[var(--subtle-text-color)] transition-transform" :class="showAi ? 'rotate-180' : ''"></i>
+                </div>
+                
+                <div x-show="showAi" x-collapse class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-[var(--bg-color)] p-4 rounded-xl border border-[var(--card-border)]">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-medium text-[var(--subtle-text-color)] mb-1">Base URL (e.g., LocalAI/Ollama)</label>
+                        <input type="text" x-model="aiConfig.baseUrl" @input="saveConfig" placeholder="https://api.openai.com/v1" class="block w-full px-3 py-2 text-sm bg-[var(--secondary-bg-color)] border border-[var(--input-border-color)] rounded-lg focus:ring-1 focus:ring-primary-500" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-[var(--subtle-text-color)] mb-1">Model Name</label>
+                        <input type="text" x-model="aiConfig.model" @input="saveConfig" placeholder="gpt-4o-mini" class="block w-full px-3 py-2 text-sm bg-[var(--secondary-bg-color)] border border-[var(--input-border-color)] rounded-lg focus:ring-1 focus:ring-primary-500" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-[var(--subtle-text-color)] mb-1">API Key</label>
+                        <input type="password" x-model="aiConfig.apiKey" @input="saveConfig" placeholder="sk-..." class="block w-full px-3 py-2 text-sm bg-[var(--secondary-bg-color)] border border-[var(--input-border-color)] rounded-lg focus:ring-1 focus:ring-primary-500" />
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section x-show="storyData !== null" x-transition class="space-y-6" style="display: none;">
+            
+            <div class="bg-[var(--secondary-bg-color)] rounded-2xl shadow-sm border border-[var(--card-border)] p-6 md:p-8">
+                <template x-if="storyData">
+                    <div class="flex flex-col md:flex-row gap-6">
+                        <a :href="storyData.story.url" target="_blank" rel="noopener noreferrer" class="mx-auto md:mx-0">
+                            <img :src="storyData.story.cover" class="w-40 md:w-48 aspect-[2/3] rounded-lg shadow-lg object-cover ring-1 ring-black/10 dark:ring-white/10 hover:opacity-95 transition-opacity">
+                        </a>
+                        
+                        <div class="flex-1 space-y-4">
+                            <h2 class="text-2xl sm:text-3xl md:text-4xl font-black font-serif leading-tight">
+                                <a :href="storyData.story.url" target="_blank" rel="noopener noreferrer" class="text-[var(--heading-color)] hover:text-primary-500 transition-colors" x-text="storyData.story.title"></a>
+                            </h2>
+                              
+                            <div class="flex flex-wrap items-center gap-3">
+                                <img :src="storyData.author.avatar" class="w-8 h-8 rounded-full border border-[var(--card-border)]">
+                                <p class="font-bold text-[var(--heading-color)]" x-text="storyData.author.name"></p>
+                                <span x-show="storyData.story.completed" class="px-2 py-0.5 text-[10px] font-bold uppercase bg-[var(--success-bg)] text-[var(--success-text)] border border-[var(--success-border)] rounded">Completed</span>
+                                <span x-show="!storyData.story.completed" class="px-2 py-0.5 text-[10px] font-bold uppercase bg-[var(--info-bg)] text-[var(--info-text)] border border-[var(--info-border)] rounded">Ongoing</span>
+                                <span x-show="storyData.moderation.mature" class="px-2 py-0.5 text-[10px] font-bold uppercase bg-[var(--error-bg)] text-[var(--error-text)] border border-[var(--error-border)] rounded">Mature</span>
+                                <span class="px-2 py-0.5 text-[10px] font-bold uppercase bg-[var(--bg-color)] text-[var(--subtle-text-color)] rounded border border-[var(--card-border)]" x-text="storyData.story.language?.name || 'Unknown'"></span>
+                            </div>
+
+                            <p class="text-sm text-[var(--subtle-text-color)] leading-relaxed font-serif whitespace-pre-line" x-text="storyData.story.description"></p>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="p-4 rounded-xl bg-[var(--secondary-bg-color)] border border-[var(--card-border)] shadow-sm flex flex-col items-center justify-center text-center">
+                    <p class="text-[10px] uppercase font-bold text-[var(--subtle-text-color)] tracking-wider mb-1">Reads</p>
+                    <p class="text-xl font-black text-[var(--heading-color)]" x-text="formatNumber(storyData?.stats?.reads)"></p>
+                </div>
+                <div class="p-4 rounded-xl bg-[var(--secondary-bg-color)] border border-[var(--card-border)] shadow-sm flex flex-col items-center justify-center text-center">
+                    <p class="text-[10px] uppercase font-bold text-[var(--subtle-text-color)] tracking-wider mb-1">Votes</p>
+                    <p class="text-xl font-black text-[var(--heading-color)]" x-text="formatNumber(storyData?.stats?.votes)"></p>
+                </div>
+                <div class="p-4 rounded-xl bg-[var(--secondary-bg-color)] border border-[var(--card-border)] shadow-sm flex flex-col items-center justify-center text-center">
+                    <p class="text-[10px] uppercase font-bold text-[var(--subtle-text-color)] tracking-wider mb-1">Comments</p>
+                    <p class="text-xl font-black text-[var(--heading-color)]" x-text="formatNumber(storyData?.stats?.comments)"></p>
+                </div>
+                <div class="p-4 rounded-xl bg-[var(--secondary-bg-color)] border border-[var(--card-border)] shadow-sm flex flex-col items-center justify-center text-center">
+                    <p class="text-[10px] uppercase font-bold text-[var(--subtle-text-color)] tracking-wider mb-1">Words (Est)</p>
+                    <p class="text-xl font-black text-[var(--heading-color)]" x-text="formatNumber(storyData?.stats?.words)"></p>
+                </div>
+            </div>
+
+            <div class="bg-[var(--secondary-bg-color)] rounded-2xl shadow-sm border border-[var(--card-border)] p-5">
+                <div class="flex flex-wrap gap-2">
+                    <template x-for="category in (storyData?.story?.categories || [])" :key="category.id">
+                        <span class="px-3 py-1 text-xs font-semibold rounded-full bg-[var(--info-bg)] text-[var(--info-text)] border border-[var(--info-border)]" x-text="category.name"></span>
+                    </template>
+                    <template x-for="tag in (storyData?.story?.storyTags || [])" :key="tag.id || tag.name">
+                        <span class="px-3 py-1 text-xs font-semibold rounded-full bg-[var(--tag-bg)] text-[var(--tag-text)] border border-[var(--tag-border)]" x-text="tag.name"></span>
+                    </template>
+                    <span x-show="!((storyData?.story?.categories)?.length || (storyData?.story?.storyTags)?.length)" class="text-sm text-[var(--subtle-text-color)]">No tags available</span>
+                </div>
+            </div>
+
+            <div class="bg-[var(--secondary-bg-color)] rounded-2xl shadow-sm border border-[var(--card-border)] overflow-hidden max-h-[560px] flex flex-col">
+                <div class="overflow-y-auto p-3 bg-[var(--bg-color)] custom-scrollbar flex-1">
+                    <ul class="space-y-2">
+                        <template x-for="(part, index) in (storyData ? storyData.chapters : [])" :key="part.id">
+                            <li class="flex items-center gap-4 p-4 rounded-xl border transition-colors cursor-pointer"
+                                :class="selectedIds.includes(String(part.id)) ? 'bg-[var(--secondary-bg-color)] border-primary-500 shadow-sm' : 'bg-[var(--card-bg)] border-[var(--card-border)] hover:bg-[var(--secondary-bg-color)]'"
+                                @click="toggleId(String(part.id))">
+                                <div class="relative flex items-center">
+                                    <input type="checkbox" :value="String(part.id)" x-model="selectedIds" class="chapter-checkbox pointer-events-none">
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <a :href="part.url" target="_blank" rel="noopener noreferrer" class="font-semibold text-sm truncate text-primary-500 hover:underline block" x-text="part.title" @click.stop></a>
+                                    <div class="text-xs text-[var(--subtle-text-color)] mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                                        <span><span class="font-bold" x-text="'Part: ' + (index + 1)"></span></span>
+                                        <span class="text-[var(--separator-color)]">|</span>
+                                        <span>ID: <span x-text="part.id"></span></span>
+                                        <span class="text-[var(--separator-color)]">|</span>
+                                        <span>Words: <span x-text="formatNumber(part.length)"></span></span>
+                                        <span class="text-[var(--separator-color)]">|</span>
+                                        <span>Date: <span x-text="part.formattedCreatedAt || part.createdAt || 'Unknown'"></span></span>
+                                        <template x-if="part.isNew">
+                                            <>
+                                                <span class="text-[var(--separator-color)]">|</span>
+                                                <span class="text-primary-600">New</span>
+                                            </>
+                                        </template>
+                                        <template x-if="part.draft">
+                                            <>
+                                                <span class="text-[var(--separator-color)]">|</span>
+                                                <span class="text-[var(--error-text)]">Draft</span>
+                                            </>
+                                        </template>
+                                    </div>
+                                </div>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+                <div class="p-4 bg-[var(--secondary-bg-color)] border-t border-[var(--separator-color)]">
+                    <div class="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center">
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm text-[var(--subtle-text-color)]">
+                                <span class="font-semibold text-[var(--heading-color)]" x-text="selectedIds.length"></span> selected
+                            </span>
+                            <button @click="toggleSelectAll(true)" class="px-3 py-2 text-xs font-semibold rounded-lg bg-[var(--button-muted-bg)] text-[var(--button-muted-text)] border border-[var(--button-muted-border)] hover:brightness-95 transition">Select All</button>
+                            <button @click="toggleSelectAll(false)" class="px-3 py-2 text-xs font-semibold rounded-lg bg-[var(--button-muted-bg)] text-[var(--button-muted-text)] border border-[var(--button-muted-border)] hover:brightness-95 transition">Clear</button>
+                        </div>
+                        <div class="flex gap-2 lg:ml-auto lg:max-w-sm">
+                            <input type="text" x-model="chapterRangeInput" @keydown.enter.prevent="applyChapterRange()" placeholder="1-5, 8, 11-13" class="flex-1 px-3 py-2 text-sm bg-[var(--input-bg-color)] border border-[var(--input-border-color)] rounded-lg focus:ring-1 focus:ring-primary-500" />
+                            <button @click="applyChapterRange()" class="px-3 py-2 text-xs font-semibold rounded-lg bg-[var(--button-muted-bg)] text-[var(--button-muted-text)] border border-[var(--button-muted-border)] hover:brightness-95 transition whitespace-nowrap">Apply</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bottom-0 left-0 right-0 z-30 px-3 sm:px-6 lg:px-8 pb-3 sm:pb-6">
+                <div class="max-w-5xl mx-auto">
+                    <div class="bg-[var(--secondary-bg-color)] rounded-2xl shadow-xl border border-[var(--card-border)] overflow-visible">
+                        <div x-show="statusMessage" x-transition class="bg-[var(--info-bg)] text-[var(--info-text)] border-b border-[var(--info-border)] text-xs font-bold py-2 px-4 shadow-sm flex items-center gap-2 rounded-t-2xl" style="display: none;">
+                        <i data-lucide="loader" class="w-3 h-3 animate-spin"></i>
+                        <span x-text="statusMessage"></span>
+                        </div>
+
+                        <div class="p-4 flex flex-col gap-4">
+                            <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                                <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 w-full md:w-auto md:flex-1">
+                                    <button @click="fetchChapters()" :disabled="isLoadingAny || !selectedIds.length" class="md:w-auto min-h-11 bg-[var(--bg-color)] hover:bg-black/5 dark:hover:bg-white/10 text-[var(--heading-color)] px-5 py-2.5 rounded-xl font-bold disabled:opacity-50 transition flex items-center justify-center gap-2 border border-[var(--card-border)]">
+                                        <i data-lucide="download" class="w-4 h-4"></i>
+                                        Fetch
+                                    </button>
+
+                                    <div class="w-full sm:w-auto flex flex-col sm:flex-row gap-2 sm:gap-0 sm:rounded-xl shadow-sm">
+                                        <div class="relative flex-1 sm:flex-none" @keydown.escape.window="showPromptMenu = false">
+                                            <button @click="showPromptMenu = !showPromptMenu" type="button" class="w-full sm:min-w-[190px] h-[42px] bg-[var(--bg-color)] border border-[var(--input-border-color)] sm:border-y sm:border-l sm:border-r-0 text-[var(--text-color)] text-sm rounded-xl sm:rounded-l-xl sm:rounded-r-none px-3 py-2.5 outline-none flex items-center justify-between gap-3 hover:border-primary-500 transition">
+                                                <span class="truncate" x-text="CONFIG.PROMPTS[selectedPromptKey]?.label || 'Select prompt'"></span>
+                                                <i data-lucide="chevrons-up-down" class="w-4 h-4 text-[var(--subtle-text-color)]"></i>
+                                            </button>
+                                            <div x-show="showPromptMenu" x-transition @click.outside="showPromptMenu = false" class="absolute bottom-full left-0 mb-2 w-full min-w-[220px] rounded-xl border border-[var(--card-border)] bg-[var(--secondary-bg-color)] shadow-xl overflow-hidden z-40" style="display: none;">
+                                                <div class="max-h-64 overflow-y-auto custom-scrollbar p-2">
+                                                    <template x-for="(prompt, key) in CONFIG.PROMPTS" :key="key">
+                                                        <button type="button" @click="selectedPromptKey = key; showPromptMenu = false; refreshIcons()" class="w-full text-left px-3 py-2.5 rounded-lg text-sm transition flex items-center justify-between gap-3"
+                                                            :class="selectedPromptKey === key ? 'bg-primary-100/80 dark:bg-primary-500/15 text-primary-700 dark:text-primary-400' : 'text-[var(--text-color)] hover:bg-[var(--bg-color)]'">
+                                                            <span class="truncate" x-text="prompt.label"></span>
+                                                            <i x-show="selectedPromptKey === key" data-lucide="check" class="w-4 h-4"></i>
+                                                        </button>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <template x-if="currentPromptPlaceholder">
+                                            <div class="flex flex-col sm:flex-row gap-2 md:gap-0 flex-1">
+                                                <div x-show="currentPromptPlaceholderOptions.length" class="relative flex-1 sm:flex-none min-w-0" @keydown.escape.window="showPlaceholderMenu = false">
+                                                    <button @click="showPlaceholderMenu = !showPlaceholderMenu" type="button" class="w-full sm:min-w-[170px] h-[42px] bg-[var(--bg-color)] border border-[var(--input-border-color)] sm:border-y sm:border-r-0 text-[var(--text-color)] text-sm rounded-xl sm:rounded-none px-3 py-2.5 outline-none flex items-center justify-between gap-3 hover:border-primary-500 transition">
+                                                        <span class="truncate" x-text="currentPromptPlaceholderOptions.find(option => option.value === selectedPromptPlaceholderPreset)?.label || currentPromptPlaceholder.label"></span>
+                                                        <i data-lucide="chevrons-up-down" class="w-4 h-4 text-[var(--subtle-text-color)]"></i>
+                                                    </button>
+                                                    <div x-show="showPlaceholderMenu" x-transition @click.outside="showPlaceholderMenu = false" x-effect="refreshIcons()" class="absolute bottom-full left-0 mb-2 w-full min-w-[200px] rounded-xl border border-[var(--card-border)] bg-[var(--secondary-bg-color)] shadow-xl overflow-hidden z-40" style="display: none;">
+                                                        <div class="max-h-64 overflow-y-auto custom-scrollbar p-2">
+                                                            <template x-for="option in currentPromptPlaceholderOptions" :key="option.value">
+                                                                <button type="button" @click="selectedPromptPlaceholderPreset = option.value; promptPlaceholderInput = ''; showPlaceholderMenu = false" class="w-full text-left px-3 py-2.5 rounded-lg text-sm transition flex items-center justify-between gap-3"
+                                                                    :class="selectedPromptPlaceholderPreset === option.value && !promptPlaceholderInput.trim() ? 'bg-primary-100/80 dark:bg-primary-500/15 text-primary-700 dark:text-primary-400' : 'text-[var(--text-color)] hover:bg-[var(--bg-color)]'">
+                                                                    <span class="truncate" x-text="option.label"></span>
+                                                                    <i x-show="selectedPromptPlaceholderPreset === option.value && !promptPlaceholderInput.trim()" data-lucide="check" class="w-4 h-4"></i>
+                                                                </button>
+                                                            </template>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <input x-show="!currentPromptPlaceholderOptions.length" type="text" x-model="promptPlaceholderInput" :placeholder="currentPromptPlaceholder.inputPlaceholder || ('Custom ' + currentPromptPlaceholder.label.toLowerCase())" class="w-full sm:w-[180px] h-[42px] bg-[var(--bg-color)] border border-[var(--input-border-color)] sm:border-y sm:border-r-0 text-[var(--text-color)] text-sm rounded-xl sm:rounded-none px-3 py-2.5 outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500" />
+                                            </div>
+                                        </template>
+
+                                        <button @click="rewriteChapters()" :disabled="isLoadingAny || !hasFetchedChapters" class="w-full sm:w-auto h-[42px] bg-secondary-600 text-white px-4 py-2.5 rounded-xl sm:rounded-l-none sm:rounded-r-xl font-bold hover:bg-secondary-700 disabled:opacity-50 transition flex items-center justify-center gap-2 border border-secondary-600">
+                                            <i data-lucide="sparkles" class="w-4 h-4"></i> Run AI
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-2 w-full md:w-auto md:shrink-0 relative">
+                                    <div class="flex-1 md:flex-none relative" @keydown.escape.window="showExportImportMenu = false">
+                                        <button @click="showExportImportMenu = !showExportImportMenu" class="w-full flex items-center justify-center gap-2 px-3 py-2 md:p-2 bg-[var(--bg-color)] md:bg-transparent border border-[var(--card-border)] md:border-0 rounded-lg text-[var(--subtle-text-color)] hover:text-primary-600 transition" title="Export / Import State">
+                                            <i data-lucide="arrow-left-right" class="w-5 h-5"></i>
+                                            <span class="text-xs font-semibold md:hidden">State</span>
+                                        </button>
+                                        <div x-show="showExportImportMenu" x-transition @click.outside="showExportImportMenu = false" class="absolute bottom-full left-0 mb-2 w-fit min-w-[10rem] rounded-xl border border-[var(--card-border)] bg-[var(--secondary-bg-color)] shadow-xl overflow-hidden z-50" style="display: none;">
+                                            <button @click="exportState(); showExportImportMenu = false" class="w-full text-left px-4 py-3 text-sm font-semibold text-[var(--text-color)] hover:bg-[var(--bg-color)] transition flex items-center gap-3">
+                                                <i data-lucide="download" class="w-4 h-4 text-primary-600"></i> Export State
+                                            </button>
+                                            <div class="h-px bg-[var(--separator-color)] mx-3"></div>
+                                            <button @click="importStateTrigger(); showExportImportMenu = false" class="w-full text-left px-4 py-3 text-sm font-semibold text-[var(--text-color)] hover:bg-[var(--bg-color)] transition flex items-center gap-3">
+                                                <i data-lucide="upload" class="w-4 h-4 text-secondary-600"></i> Import State
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <input type="file" accept=".json" class="hidden" x-ref="importFileInput" @change="importStateFile($event)">
+                                    <button @click="copyMarkdown()" :disabled="!storyData" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-3 py-2 md:p-2 bg-[var(--bg-color)] md:bg-transparent border border-[var(--card-border)] md:border-0 rounded-lg text-[var(--subtle-text-color)] hover:text-primary-600 transition" title="Copy to Clipboard">
+                                        <i data-lucide="clipboard-copy" class="w-5 h-5"></i>
+                                        <span class="text-xs font-semibold md:hidden">Copy</span>
+                                    </button>
+                                    <button @click="downloadMarkdown()" :disabled="!storyData" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-3 py-2 md:p-2 bg-[var(--bg-color)] md:bg-transparent border border-[var(--card-border)] md:border-0 rounded-lg text-[var(--subtle-text-color)] hover:text-primary-600 transition" title="Download File">
+                                        <i data-lucide="file-down" class="w-5 h-5"></i>
+                                        <span class="text-xs font-semibold md:hidden">Down</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div x-show="hasFetchedChapters" class="border-t border-[var(--separator-color)] pt-3 pb-2 px-3" style="display: none;">
+                            <div class="flex flex-col">
+                                <div @click="showThreads = !showThreads" class="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer select-none hover:bg-black/[0.03] dark:hover:bg-white/[0.05] transition-colors">
+                                    <i data-lucide="git-branch" class="w-4 h-4 text-primary-600 shrink-0"></i>
+                                    <span class="text-xs font-bold uppercase tracking-wider text-[var(--subtle-text-color)]">Workflow Threads</span>
+                                    <span class="text-xs text-[var(--subtle-text-color)]" x-text="'(' + (workflowRuns.length + 1) + ')'"></span>
+                                    <i data-lucide="chevron-down" class="w-3 h-3 text-[var(--subtle-text-color)] transition-transform ml-auto shrink-0" :class="showThreads ? 'rotate-180' : ''"></i>
+                                </div>
+                                <div x-show="showThreads" x-collapse class="space-y-1 pt-1">
+                                    <button @click="activateGlobalSource()"
+                                        class="w-full text-left px-3 py-2.5 rounded-xl border text-sm font-semibold transition flex items-center gap-3"
+                                        :class="activeGlobalRunId === null
+                                            ? 'bg-primary-50/70 dark:bg-primary-500/10 text-primary-700 dark:text-primary-300 border-primary-200 dark:border-primary-500/20'
+                                            : 'bg-[var(--card-bg)] text-[var(--text-color)] border-[var(--card-border)] hover:border-[var(--subtle-text-color)]'">
+                                        <i data-lucide="book-open" class="w-4 h-4 shrink-0" :class="activeGlobalRunId === null ? 'text-primary-600' : 'text-[var(--subtle-text-color)]'"></i>
+                                        <span class="flex-1 truncate">Source</span>
+                                        <span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-[var(--tag-bg)] text-[var(--tag-text)] border border-[var(--tag-border)] shrink-0">Original</span>
+                                    </button>
+                                    <template x-for="run in workflowRuns" :key="run.id">
+                                        <div class="group">
+                                            <button @click="activateGlobalRun(run.id)"
+                                                class="w-full text-left px-3 py-2.5 rounded-xl border text-sm font-semibold transition flex items-center gap-3"
+                                                :class="activeGlobalRunId === run.id
+                                                    ? 'bg-primary-50/70 dark:bg-primary-500/10 text-primary-700 dark:text-primary-300 border-primary-200 dark:border-primary-500/20'
+                                                    : 'bg-[var(--card-bg)] text-[var(--text-color)] border-[var(--card-border)] hover:border-[var(--subtle-text-color)]'">
+                                                <i data-lucide="sparkles" class="w-4 h-4 shrink-0" :class="activeGlobalRunId === run.id ? 'text-primary-600' : 'text-[var(--subtle-text-color)]'"></i>
+                                                <span class="flex-1 truncate">Thread <span x-text="run.number"></span></span>
+                                                <span @click.stop="deleteWorkflowRun(run.id)" class="w-7 h-7 rounded-lg inline-flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-100 dark:hover:bg-red-900/30 text-[var(--subtle-text-color)] hover:text-red-600 transition-all shrink-0 cursor-pointer" title="Delete thread">
+                                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                                </span>
+                                                <span class="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-secondary-100/80 dark:bg-secondary-500/15 text-secondary-600 dark:text-secondary-400 shrink-0" x-text="run.promptLabel"></span>
+                                            </button>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div x-show="hasAnyContent" class="space-y-10 pb-40 pt-6">
+                <template x-for="part in (storyData ? storyData.chapters : [])" :key="part.id">
+                    <div x-show="chapterWorkflows[part.id]?.sourceHtml" class="max-w-3xl mx-auto">
+                        
+                        <div class="flex flex-col md:flex-row md:items-baseline md:justify-between gap-3 border-b-2 border-primary-100 dark:border-primary-500/20 pb-4 mb-6">
+                            <h3 class="text-xl md:text-2xl font-bold font-serif text-[var(--heading-color)]" x-text="part.title"></h3>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span x-show="getActiveNode(String(part.id))?.isAi && getActiveNode(String(part.id))?.stage === 'done'" class="text-[10px] font-bold bg-[var(--tag-bg)] text-[var(--tag-text)] px-2 py-1 rounded-full border border-[var(--tag-border)] uppercase">
+                                    <i data-lucide="sparkles" class="w-3 h-3 inline mr-1"></i> AI Enhanced
+                                </span>
+                                <span class="text-[10px] font-bold px-2 py-1 rounded-full border uppercase"
+                                    :class="getNodeScopeClasses(getActiveNode(String(part.id))?.scope)"
+                                    x-text="getNodeScopeLabel(getActiveNode(String(part.id))?.scope)"></span>
+                                <button @click="toggleChapterHistory(String(part.id))" :disabled="!chapterWorkflows[part.id]" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-full bg-[var(--bg-color)] text-[var(--heading-color)] border border-[var(--card-border)] hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-50 transition uppercase">
+                                    <i data-lucide="history" class="w-3.5 h-3.5"></i>
+                                    <span x-text="chapterWorkflows[part.id]?.showHistory ? 'Hide' : 'History'"></span>
+                                </button>
+                                <button @click="rewriteSingleChapter(String(part.id))" :disabled="isLoadingAny || getActiveNode(String(part.id))?.isStreaming || !chapterWorkflows[part.id]?.sourceHtml" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-full uppercase transition"
+                                    :class="['queued', 'processing', 'generating'].includes(getActiveNode(String(part.id))?.stage)
+                                        ? 'bg-[var(--bg-color)] text-[var(--subtle-text-color)] border border-[var(--card-border)]'
+                                        : 'bg-secondary-600 text-white hover:bg-secondary-700 disabled:opacity-50'">
+                                    <div x-show="['queued', 'processing', 'generating'].includes(getActiveNode(String(part.id))?.stage)" class="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin shrink-0"></div>
+                                    <i x-show="!['queued', 'processing', 'generating'].includes(getActiveNode(String(part.id))?.stage)" data-lucide="sparkles" class="w-3.5 h-3.5 shrink-0"></i>
+                                    <span x-text="getActiveNode(String(part.id))?.statusLabel || (getActiveNode(String(part.id))?.isAi ? 'Branch AI' : 'Run AI')"></span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div x-show="chapterWorkflows[part.id]?.showHistory" class="mb-6 rounded-2xl border border-[var(--card-border)] bg-[var(--secondary-bg-color)] p-4 space-y-3" style="display: none;">
+                            <div class="flex flex-wrap items-center justify-between gap-3">
+                                <div>
+                                    <p class="text-xs font-bold uppercase tracking-wider text-[var(--subtle-text-color)]">Chapter Workflow</p>
+                                    <p class="text-sm text-[var(--subtle-text-color)]">Pick any saved node to view or roll back.</p>
+                                </div>
+                                <span class="text-xs font-semibold text-[var(--subtle-text-color)]" x-text="'Active: ' + getNodeDisplayName(getActiveNode(String(part.id)))"></span>
+                            </div>
+                            <div class="space-y-2">
+                                <template x-for="node in getChapterHistory(String(part.id))" :key="node.id">
+                                    <div class="rounded-xl border p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+                                        :class="chapterWorkflows[part.id]?.activeNodeId === node.id ? 'border-primary-200 dark:border-primary-500/30 bg-primary-50/60 dark:bg-primary-500/10' : 'border-[var(--card-border)] bg-[var(--bg-color)]'">
+                                        <div class="space-y-1 flex-1 min-w-0">
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <span class="text-sm font-semibold text-[var(--heading-color)]" x-text="getNodeDisplayName(node)"></span>
+                                                <span class="text-[10px] font-bold px-2 py-1 rounded-full border uppercase"
+                                                    :class="getNodeScopeClasses(node.scope)"
+                                                    x-text="getNodeScopeLabel(node.scope)"></span>
+                                                <span x-show="chapterWorkflows[part.id]?.activeNodeId === node.id" class="text-[10px] font-bold px-2 py-1 rounded-full border border-primary-200 dark:border-primary-500/30 bg-primary-100/80 dark:bg-primary-500/15 text-primary-700 dark:text-primary-400 uppercase">Active</span>
+                                            </div>
+                                            <p class="text-xs text-[var(--subtle-text-color)]" x-text="getNodeMetaLine(node, String(part.id))"></p>
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <button x-show="node.scope !== 'source'" @click.stop="deleteChapterWorkflowNode(String(part.id), node.id)" class="w-8 h-8 rounded-full flex items-center justify-center border border-[var(--card-border)] bg-[var(--secondary-bg-color)] text-[var(--subtle-text-color)] hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 transition opacity-60 hover:opacity-100" title="Delete node">
+                                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                            </button>
+                                            <button @click="setActiveChapterNode(String(part.id), node.id)" class="px-3 py-2 rounded-full text-xs font-semibold border border-[var(--card-border)] bg-[var(--secondary-bg-color)] text-[var(--heading-color)] hover:bg-black/5 dark:hover:bg-white/10 transition">Rollback</button>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div class="prose prose-lg dark:prose-invert prose-stone font-serif max-w-none leading-relaxed">
+                             <div x-html="getChapterDisplayHtml(String(part.id))"></div>
+                        </div>
+
+                        <div class="flex items-center gap-4 py-12">
+                            <div class="h-px bg-[var(--separator-color)] flex-1"></div>
+                            <i data-lucide="book" class="w-4 h-4 text-[var(--subtle-text-color)]"></i>
+                            <div class="h-px bg-[var(--separator-color)] flex-1"></div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+        </section>
+    </div>
+
+    <script>
+        const CONFIG = {
+            CORS_PROXY: 'https://flare.farel.is-a.dev/conduit/?url=',
+            API_WATT: 'https://www.wattpad.com/apiv2/storytext?id=',
+            PROMPTS: {
+                'proofread': {
+                  label: 'Proofread',
+                  text: 'Please proofread the following HTML content for any grammatical errors, spelling mistakes, and typos. Correct them to improve clarity and readability. Ensure the output is valid HTML and preserves the original tags and structure, only modifying the text content where necessary. Do not change the original style or voice. Output only the modified HTML.'
+                },
+                'format': {
+                  label: 'Enhance',
+                  text: 'Rewrite the following chapter, provided as HTML content, to be more descriptive and engaging. Enhance the sensory details (sight, sound, smell, touch, taste) and improve the pacing. Make the characters\' emotions more palpable. The output must be valid HTML, preserving the original structure and tags, only modifying the text content. Output only the modified HTML.'
+                },
+                'summarize': {
+                  label: 'Summarize',
+                  text: 'Create a detailed bullet-point summary of the following story chapter. Wrap the output in a <div>. Output only the modified HTML.'
+                },
+                'translate': {
+                  label: 'Translate',
+                  text: 'Translate the following story chapter to {{placeholder}}. Output only the modified HTML.',
+                  placeholder: {
+                    label: 'Target',
+                    default: 'spanish',
+                    options: [
+                        { value: 'english', label: 'English' },
+                        { value: 'mandarin-chinese', label: 'Mandarin Chinese' },
+                        { value: 'hindi', label: 'Hindi' },
+                        { value: 'spanish', label: 'Spanish' },
+                        { value: 'french', label: 'French' },
+                        { value: 'arabic', label: 'Arabic' },
+                        { value: 'bengali', label: 'Bengali' },
+                        { value: 'portuguese', label: 'Portuguese' },
+                        { value: 'russian', label: 'Russian' },
+                        { value: 'urdu', label: 'Urdu' },
+                        { value: 'indonesian', label: 'Indonesian' },
+                        { value: 'german', label: 'German' },
+                        { value: 'japanese', label: 'Japanese' },
+                        { value: 'nigerian-pidgin', label: 'Nigerian Pidgin' },
+                        { value: 'marathi', label: 'Marathi' },
+                        { value: 'telugu', label: 'Telugu' },
+                        { value: 'turkish', label: 'Turkish' },
+                        { value: 'tamil', label: 'Tamil' },
+                        { value: 'yue-chinese', label: 'Yue Chinese (Cantonese)' },
+                        { value: 'wu-chinese', label: 'Wu Chinese' },
+                        { value: 'korean', label: 'Korean' },
+                        { value: 'vietnamese', label: 'Vietnamese' },
+                        { value: 'hausa', label: 'Hausa' },
+                        { value: 'thai', label: 'Thai' },
+                        { value: 'javanese', label: 'Javanese' },
+                        { value: 'italian', label: 'Italian' },
+                        { value: 'egyptian-arabic', label: 'Egyptian Arabic' },
+                        { value: 'gujarati', label: 'Gujarati' },
+                        { value: 'iranian-persian', label: 'Iranian Persian' },
+                        { value: 'bhojpuri', label: 'Bhojpuri' },
+                        { value: 'southern-min', label: 'Southern Min' },
+                        { value: 'min-nan-chinese', label: 'Min Nan Chinese' },
+                        { value: 'hakka-chinese', label: 'Hakka Chinese' },
+                        { value: 'jin-chinese', label: 'Jin Chinese' },
+                        { value: 'filipino', label: 'Filipino' },
+                        { value: 'polish', label: 'Polish' },
+                        { value: 'pashto', label: 'Pashto' },
+                        { value: 'kannada', label: 'Kannada' },
+                        { value: 'malayalam', label: 'Malayalam' },
+                        { value: 'sundanese', label: 'Sundanese' },
+                        { value: 'romanian', label: 'Romanian' },
+                        { value: 'ukrainian', label: 'Ukrainian' },
+                        { value: 'yoruba', label: 'Yoruba' },
+                        { value: 'maithili', label: 'Maithili' },
+                        { value: 'burmese', label: 'Burmese' },
+                        { value: 'odia', label: 'Odia' },
+                        { value: 'assamese', label: 'Assamese' },
+                        { value: 'sindhi', label: 'Sindhi' },
+                        { value: 'algerian-arabic', label: 'Algerian Arabic' },
+                        { value: 'saraiki', label: 'Saraiki' },
+                        { value: 'amharic', label: 'Amharic' },
+                        { value: 'moroccan-arabic', label: 'Moroccan Arabic' },
+                        { value: 'tagalog', label: 'Tagalog' },
+                        { value: 'dutch', label: 'Dutch' }
+                    ]
+                  }
+                },
+            }
+        };
+
+        const proxiedUrl = (url) => CONFIG.CORS_PROXY + encodeURIComponent(url);
+
+        function wattpadApp() {
+            return {
+                url: '',
+                aiConfig: {
+                    baseUrl: 'https://api.openai.com/v1',
+                    apiKey: '',
+                    model: 'gpt-4o-mini'
+                },
+                showAi: false,
+                uiState: 'idle',
+                statusMessage: '', // The Notif State
+                toast: { visible: false, message: '', type: 'success' },
+                
+                storyData: null,
+                chapterRangeInput: '',
+                selectedIds: [],
+                chapterWorkflows: {},
+                workflowRuns: [],
+                activeGlobalRunId: null,
+                actionPanelExpanded: false,
+                selectedPromptKey: 'proofread',
+                showPromptMenu: false,
+                selectedPromptPlaceholderPreset: 'spanish',
+                promptPlaceholderInput: '',
+                showPlaceholderMenu: false,
+                turndown: null,
+                showThreads: true,
+                showExportImportMenu: false,
+
+                init() {
+                    if (typeof TurndownService !== 'undefined') this.turndown = new TurndownService({ headingStyle: 'atx' });
+                    
+                    // Load Config
+                    const saved = localStorage.getItem('wattpad_config');
+                    if (saved) {
+                        try {
+                            this.aiConfig = { ...this.aiConfig, ...JSON.parse(saved) };
+                        } catch(e) {}
+                    }
+                    this.syncResponsiveState();
+                    window.addEventListener('resize', () => this.syncResponsiveState());
+                    this.refreshIcons();
+                },
+
+                syncResponsiveState() {
+                    this.actionPanelExpanded = window.innerWidth >= 640;
+                },
+
+                saveConfig() {
+                    localStorage.setItem('wattpad_config', JSON.stringify(this.aiConfig));
+                },
+
+                showToast(msg, type = 'success') {
+                    this.toast.message = msg;
+                    this.toast.type = type;
+                    this.toast.visible = true;
+                    setTimeout(() => this.toast.visible = false, 3000);
+                },
+
+                get isLoadingAny() { return ['loadingMeta', 'loadingChapters', 'rewritingChapters'].includes(this.uiState); },
+                get fetchedChapterIds() {
+                    if (!this.storyData?.chapters?.length) return [];
+                    return this.storyData.chapters
+                        .map(part => String(part.id))
+                        .filter(id => this.chapterWorkflows[id]?.sourceHtml);
+                },
+                get hasFetchedChapters() { return this.fetchedChapterIds.length > 0; },
+                get hasAnyContent() { return this.hasFetchedChapters; },
+                get currentPromptConfig() { return CONFIG.PROMPTS[this.selectedPromptKey] || null; },
+                get currentPromptPlaceholder() { return this.currentPromptConfig?.placeholder || null; },
+                get currentPromptPlaceholderOptions() { return this.currentPromptPlaceholder?.options || []; },
+                get workflowStorageKey() {
+                    return this.storyData?.story?.id ? `wattpad_workflow_${this.storyData.story.id}` : '';
+                },
+
+                refreshIcons() { this.$nextTick(() => lucide.createIcons()); },
+
+                getPromptPlaceholderValue() {
+                    const options = this.currentPromptPlaceholderOptions;
+                    if (!options.length) return this.promptPlaceholderInput.trim();
+                    const selected = options.find(option => option.value === this.selectedPromptPlaceholderPreset);
+                    return selected?.label || options[0]?.label || '';
+                },
+
+                resolvePromptText() {
+                    const promptText = this.currentPromptConfig?.text || '';
+                    if (!promptText.includes('{{placeholder}}')) return promptText;
+                    return promptText.replaceAll('{{placeholder}}', this.getPromptPlaceholderValue());
+                },
+
+                validatePromptPlaceholder() {
+                    if (!this.currentPromptPlaceholder) return true;
+                    if (this.getPromptPlaceholderValue()) return true;
+                    this.showToast(`Please select or enter a ${this.currentPromptPlaceholder.label.toLowerCase()}`, 'error');
+                    return false;
+                },
+
+                newWorkflowId(prefix) {
+                    if (window.crypto?.randomUUID) return `${prefix}-${window.crypto.randomUUID()}`;
+                    return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+                },
+
+                createSourceNode(chapterId, html) {
+                    return {
+                        id: `source-${chapterId}`,
+                        chapterId,
+                        parentNodeId: null,
+                        runId: null,
+                        branchNumber: 0,
+                        rootSource: 'source',
+                        scope: 'source',
+                        promptKey: 'source',
+                        promptLabel: 'Source',
+                        promptTextResolved: '',
+                        placeholderValue: '',
+                        html,
+                        createdAt: Date.now(),
+                        stage: 'done',
+                        statusLabel: '',
+                        isAi: false,
+                        isStreaming: false,
+                        error: '',
+                        streamBuffer: '',
+                        flushScheduled: false
+                    };
+                },
+
+                createEmptyChapterWorkflow(chapterId) {
+                    return {
+                        chapterId,
+                        sourceHtml: '',
+                        rootNodeId: '',
+                        activeNodeId: '',
+                        headNodeId: '',
+                        lastGlobalNodeId: '',
+                        localRunCount: 0,
+                        showHistory: false,
+                        nodes: {}
+                    };
+                },
+
+                ensureChapterWorkflow(id) {
+                    if (!this.chapterWorkflows[id]) {
+                        this.chapterWorkflows[id] = this.createEmptyChapterWorkflow(id);
+                    }
+                    return this.chapterWorkflows[id];
+                },
+
+                initializeChapterWorkflow(id, html) {
+                    const clean = this.purifyHtml(html);
+                    const rootNode = this.createSourceNode(id, clean);
+                    this.chapterWorkflows[id] = {
+                        chapterId: id,
+                        sourceHtml: clean,
+                        rootNodeId: rootNode.id,
+                        activeNodeId: rootNode.id,
+                        headNodeId: rootNode.id,
+                        lastGlobalNodeId: rootNode.id,
+                        localRunCount: 0,
+                        showHistory: false,
+                        nodes: { [rootNode.id]: rootNode }
+                    };
+                },
+
+                buildPromptExecution() {
+                    return {
+                        promptKey: this.selectedPromptKey,
+                        promptLabel: this.currentPromptConfig?.label || 'Prompt',
+                        promptTextResolved: this.resolvePromptText(),
+                        placeholderValue: this.getPromptPlaceholderValue()
+                    };
+                },
+
+                createWorkflowNode({ chapterId, parentNodeId, scope, promptKey, promptLabel, promptTextResolved, placeholderValue, runId = null, branchNumber = 0 }) {
+                    const parentNode = parentNodeId ? this.getNode(chapterId, parentNodeId) : null;
+                    return {
+                        id: this.newWorkflowId(scope === 'global' ? 'global' : 'chapter'),
+                        chapterId,
+                        parentNodeId,
+                        runId,
+                        branchNumber,
+                        rootSource: parentNode?.isAi ? 'ai' : 'source',
+                        scope,
+                        promptKey,
+                        promptLabel,
+                        promptTextResolved,
+                        placeholderValue,
+                        html: '',
+                        createdAt: Date.now(),
+                        stage: 'queued',
+                        statusLabel: '',
+                        isAi: true,
+                        isStreaming: false,
+                        error: '',
+                        streamBuffer: '',
+                        flushScheduled: false
+                    };
+                },
+
+                addNodeToChapter(id, node, options = {}) {
+                    const { setActive = true, setHead = true, setLastGlobal = false } = options;
+                    const state = this.ensureChapterWorkflow(id);
+                    state.nodes = { ...state.nodes, [node.id]: node };
+                    if (setActive) state.activeNodeId = node.id;
+                    if (setHead) state.headNodeId = node.id;
+                    if (setLastGlobal) state.lastGlobalNodeId = node.id;
+                },
+
+                hydrateWorkflowNode(chapterId, rawNode) {
+                    return {
+                        id: rawNode.id,
+                        chapterId,
+                        parentNodeId: rawNode.parentNodeId ?? null,
+                        runId: rawNode.runId ?? null,
+                        branchNumber: rawNode.branchNumber ?? 0,
+                        rootSource: rawNode.rootSource || 'source',
+                        scope: rawNode.scope || 'source',
+                        promptKey: rawNode.promptKey || 'source',
+                        promptLabel: rawNode.promptLabel || 'Source',
+                        promptTextResolved: rawNode.promptTextResolved || '',
+                        placeholderValue: rawNode.placeholderValue || '',
+                        html: rawNode.html || '',
+                        createdAt: rawNode.createdAt || Date.now(),
+                        stage: rawNode.stage || 'idle',
+                        statusLabel: rawNode.statusLabel || '',
+                        isAi: !!rawNode.isAi,
+                        isStreaming: !!rawNode.isStreaming,
+                        error: rawNode.error || '',
+                        streamBuffer: '',
+                        flushScheduled: false
+                    };
+                },
+
+                restoreWorkflowState() {
+                    this.chapterWorkflows = {};
+                    this.workflowRuns = [];
+                    this.activeGlobalRunId = null;
+                    if (!this.workflowStorageKey) return;
+
+                    const saved = localStorage.getItem(this.workflowStorageKey);
+                    if (!saved) return;
+
+                    try {
+                        const parsed = JSON.parse(saved);
+                        const rawWorkflows = parsed.chapterWorkflows || {};
+                        this.chapterWorkflows = Object.fromEntries(Object.entries(rawWorkflows).map(([id, state]) => {
+                            const nodes = Object.fromEntries(Object.entries(state.nodes || {}).map(([nodeId, node]) => [nodeId, this.hydrateWorkflowNode(id, node)]));
+                            return [id, {
+                                chapterId: id,
+                                sourceHtml: state.sourceHtml || '',
+                                rootNodeId: state.rootNodeId || '',
+                                activeNodeId: state.activeNodeId || state.rootNodeId || '',
+                                headNodeId: state.headNodeId || state.activeNodeId || state.rootNodeId || '',
+                                lastGlobalNodeId: state.lastGlobalNodeId || state.rootNodeId || '',
+                                localRunCount: state.localRunCount || 0,
+                                showHistory: false,
+                                nodes
+                            }];
+                        }));
+                        this.workflowRuns = Array.isArray(parsed.workflowRuns) ? parsed.workflowRuns : [];
+                        this.activeGlobalRunId = parsed.activeGlobalRunId ?? null;
+                    } catch (e) {
+                        console.error(e);
+                    }
+                },
+
+                persistWorkflowState() {
+                    if (!this.workflowStorageKey) return;
+                    const chapterWorkflows = Object.fromEntries(Object.entries(this.chapterWorkflows).map(([id, state]) => {
+                        const nodes = Object.fromEntries(Object.entries(state.nodes || {}).map(([nodeId, node]) => [nodeId, {
+                            id: node.id,
+                            chapterId: node.chapterId,
+                            parentNodeId: node.parentNodeId,
+                            runId: node.runId,
+                            branchNumber: node.branchNumber,
+                            rootSource: node.rootSource,
+                            scope: node.scope,
+                            promptKey: node.promptKey,
+                            promptLabel: node.promptLabel,
+                            promptTextResolved: node.promptTextResolved,
+                            placeholderValue: node.placeholderValue,
+                            html: node.html,
+                            createdAt: node.createdAt,
+                            stage: node.stage,
+                            statusLabel: node.statusLabel,
+                            isAi: node.isAi,
+                            isStreaming: false,
+                            error: node.error
+                        }]));
+                        return [id, {
+                            chapterId: state.chapterId,
+                            sourceHtml: state.sourceHtml,
+                            rootNodeId: state.rootNodeId,
+                            activeNodeId: state.activeNodeId,
+                            headNodeId: state.headNodeId,
+                            lastGlobalNodeId: state.lastGlobalNodeId,
+                            localRunCount: state.localRunCount,
+                            nodes
+                        }];
+                    }));
+                    localStorage.setItem(this.workflowStorageKey, JSON.stringify({
+                        storyId: this.storyData?.story?.id,
+                        chapterWorkflows,
+                        workflowRuns: this.workflowRuns,
+                        activeGlobalRunId: this.activeGlobalRunId
+                    }));
+                },
+
+                getNode(chapterId, nodeId) {
+                    return this.chapterWorkflows[chapterId]?.nodes?.[nodeId] || null;
+                },
+
+                getActiveNode(chapterId) {
+                    const state = this.chapterWorkflows[chapterId];
+                    if (!state) return null;
+                    return state.nodes?.[state.activeNodeId] || state.nodes?.[state.rootNodeId] || null;
+                },
+
+                getNodeSourceHtml(chapterId, node) {
+                    if (!node) return '';
+                    if (!node.parentNodeId) return this.chapterWorkflows[chapterId]?.sourceHtml || node.html || '';
+                    return this.getNode(chapterId, node.parentNodeId)?.html || this.chapterWorkflows[chapterId]?.sourceHtml || '';
+                },
+
+                purifyHtml(html) {
+                    if (!html) return '';
+                    return DOMPurify.sanitize(html, {
+                        ALLOWED_ATTR: ['style', 'src', 'alt', 'href', 'target', 'rel', 'width', 'height', 'loading', 'title', 'class', 'id'],
+                        ALLOW_DATA_ATTR: false
+                    });
+                },
+
+                getChapterDisplayHtml(chapterId) {
+                    const node = this.getActiveNode(chapterId);
+                    if (!node) return '';
+                    const html = !node.isAi || node.scope === 'source' ? node.html || '' :
+                        ['queued', 'processing'].includes(node.stage) ? this.getNodeSourceHtml(chapterId, node) :
+                        node.stage === 'error' ? node.html || this.getNodeSourceHtml(chapterId, node) :
+                        node.html || '';
+                    return this.purifyHtml(html);
+                },
+
+                setNodeState(chapterId, nodeId, patch) {
+                    const state = this.chapterWorkflows[chapterId];
+                    if (!state?.nodes?.[nodeId]) return;
+                    state.nodes[nodeId] = { ...state.nodes[nodeId], ...patch };
+                },
+
+                queueNodeHtml(chapterId, nodeId, chunk) {
+                    if (!chunk) return;
+                    const entry = this.getNode(chapterId, nodeId);
+                    if (!entry) return;
+
+                    entry.streamBuffer = (entry.streamBuffer || '') + chunk;
+                    if (entry.flushScheduled) return;
+
+                    entry.flushScheduled = true;
+                    requestAnimationFrame(() => {
+                        const current = this.getNode(chapterId, nodeId);
+                        if (!current) return;
+                        current.html += current.streamBuffer || '';
+                        current.streamBuffer = '';
+                        current.flushScheduled = false;
+                    });
+                },
+
+                flushNodeHtml(chapterId, nodeId) {
+                    const entry = this.getNode(chapterId, nodeId);
+                    if (!entry?.streamBuffer) return;
+                    entry.html += entry.streamBuffer;
+                    entry.streamBuffer = '';
+                    entry.flushScheduled = false;
+                },
+
+                extractStreamContent(payload) {
+                    const delta = payload?.choices?.[0]?.delta?.content;
+                    if (typeof delta === 'string') return delta;
+                    if (Array.isArray(delta)) {
+                        return delta.map(item => typeof item === 'string' ? item : item?.text || '').join('');
+                    }
+                    return '';
+                },
+
+                async streamChatCompletion(chapterId, nodeId, sourceHtml, promptTextResolved) {
+                    const res = await fetch(proxiedUrl(`${this.aiConfig.baseUrl}/chat/completions`), {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${this.aiConfig.apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: this.aiConfig.model,
+                            stream: true,
+                            messages: [
+                                { role: 'system', content: promptTextResolved },
+                                { role: 'user', content: sourceHtml }
+                            ]
+                        })
+                    });
+
+                    if (!res.ok) throw new Error(`API Error: ${res.status}`);
+
+                    if (!res.body) {
+                        const fallbackData = await res.json();
+                        return fallbackData?.choices?.[0]?.message?.content || '';
+                    }
+
+                    const reader = res.body.getReader();
+                    const decoder = new TextDecoder();
+                    let buffer = '';
+                    let streamedHtml = '';
+
+                    while (true) {
+                        const { value, done } = await reader.read();
+                        if (done) break;
+
+                        buffer += decoder.decode(value, { stream: true });
+                        const events = buffer.split('\n\n');
+                        buffer = events.pop() || '';
+
+                        for (const event of events) {
+                            const lines = event.split('\n').filter(line => line.startsWith('data: '));
+                            for (const line of lines) {
+                                const data = line.slice(6).trim();
+                                if (!data || data === '[DONE]') continue;
+
+                                let payload;
+                                try {
+                                    payload = JSON.parse(data);
+                                } catch {
+                                    continue;
+                                }
+
+                                const chunk = this.extractStreamContent(payload);
+                                if (!chunk) continue;
+
+                                streamedHtml += chunk;
+                                this.setNodeState(chapterId, nodeId, {
+                                    isAi: true,
+                                    isStreaming: true,
+                                    stage: 'generating',
+                                    statusLabel: 'Streaming...'
+                                });
+                                this.queueNodeHtml(chapterId, nodeId, chunk);
+                            }
+                        }
+                    }
+
+                    return streamedHtml;
+                },
+
+                formatNumber(num) {
+                    if(!num) return '0';
+                    if(num >= 1000000) return (num/1000000).toFixed(1) + 'M';
+                    if(num >= 1000) return (num/1000).toFixed(1) + 'K';
+                    return num.toLocaleString();
+                },
+
+                toggleId(id) {
+                    if (this.selectedIds.includes(id)) {
+                        this.selectedIds = this.selectedIds.filter(x => x !== id);
+                    } else {
+                        this.selectedIds.push(id);
+                    }
+                },
+                toggleSelectAll(forceState) {
+                    if (forceState) {
+                        this.selectedIds = this.storyData.chapters.map(c => String(c.id));
+                    } else {
+                        this.selectedIds = [];
+                    }
+                },
+
+                parseChapterRange(rangeString, maxIndex) {
+                    const indices = new Set();
+                    if (!rangeString || typeof rangeString !== 'string' || maxIndex <= 0) return [];
+
+                    for (const part of rangeString.split(',')) {
+                        const trimmed = part.trim();
+                        if (!trimmed) continue;
+
+                        if (trimmed.includes('-')) {
+                            const [startRaw, endRaw] = trimmed.split('-').map(v => parseInt(v.trim(), 10));
+                            if (Number.isNaN(startRaw) || Number.isNaN(endRaw)) continue;
+                            const start = Math.max(1, Math.min(startRaw, endRaw));
+                            const end = Math.min(maxIndex, Math.max(startRaw, endRaw));
+                            for (let i = start; i <= end; i++) indices.add(i);
+                        } else {
+                            const value = parseInt(trimmed, 10);
+                            if (!Number.isNaN(value) && value >= 1 && value <= maxIndex) indices.add(value);
+                        }
+                    }
+
+                    return Array.from(indices).sort((a, b) => a - b);
+                },
+
+                applyChapterRange() {
+                    if (!this.storyData?.chapters?.length) return;
+                    const indices = this.parseChapterRange(this.chapterRangeInput, this.storyData.chapters.length);
+
+                    if (!indices.length) {
+                        this.showToast('Invalid chapter range', 'error');
+                        return;
+                    }
+
+                    this.selectedIds = indices
+                        .map(index => this.storyData.chapters[index - 1])
+                        .filter(Boolean)
+                        .map(chapter => String(chapter.id));
+                },
+
+                async fetchMetadata() {
+                    if (!this.url.includes('wattpad.com/story/')) return this.showToast('Invalid Wattpad URL', 'error');
+                    
+                    this.uiState = 'loadingMeta';
+                    this.statusMessage = 'Extracting story metadata...';
+                    
+                    try {
+                        const res = await fetch(proxiedUrl(this.url));
+                        const html = await res.text();
+                        this.storyData = extractAllWattpadStoryData(html); // Using the previous parsing logic
+                        this.chapterRangeInput = '';
+                        this.selectedIds = [];
+                        this.restoreWorkflowState();
+                        this.showToast('Story loaded successfully');
+                    } catch (e) {
+                        this.showToast(e.message, 'error');
+                    } finally {
+                        this.uiState = 'idle';
+                        this.statusMessage = '';
+                        this.refreshIcons();
+                    }
+                },
+
+                async fetchChapters() {
+                    this.uiState = 'loadingChapters';
+                    let count = 0;
+                    
+                    for (const id of this.selectedIds) {
+                        count++;
+                        this.statusMessage = `Fetching chapter ${count}/${this.selectedIds.length}...`;
+                        try {
+                            const res = await fetch(proxiedUrl(CONFIG.API_WATT + id));
+                            const html = await res.text();
+                            this.initializeChapterWorkflow(id, html);
+                        } catch (e) { console.error(e); }
+                    }
+                    this.uiState = 'idle';
+                    this.statusMessage = '';
+                    this.persistWorkflowState();
+                    this.refreshIcons();
+                    this.showToast(`Fetched ${count} chapters`);
+                },
+
+                getNodeScopeLabel(scope) {
+                    if (scope === 'global') return 'Global';
+                    if (scope === 'chapter') return 'Chapter';
+                    return 'Source';
+                },
+
+                getNodeScopeClasses(scope) {
+                    if (scope === 'global') return 'bg-primary-100/80 dark:bg-primary-500/15 text-primary-700 dark:text-primary-400 border-primary-200 dark:border-primary-500/20';
+                    if (scope === 'chapter') return 'bg-secondary-100/80 dark:bg-secondary-500/15 text-secondary-700 dark:text-secondary-300 border-secondary-200 dark:border-secondary-500/20';
+                    return 'bg-[var(--bg-color)] text-[var(--subtle-text-color)] border-[var(--card-border)]';
+                },
+
+                getRunNumber(runId) {
+                    return this.workflowRuns.find(run => run.id === runId)?.number || 0;
+                },
+
+                getNodeDisplayName(node) {
+                    if (!node) return 'Unknown';
+                    if (node.scope === 'source') return 'Source';
+                    if (node.scope === 'global') return `Thread ${this.getRunNumber(node.runId)} - ${node.promptLabel}`;
+                    return `Branch ${node.branchNumber} - ${node.promptLabel}`;
+                },
+
+                formatWorkflowDate(timestamp) {
+                    if (!timestamp) return 'Unknown time';
+                    return new Date(timestamp).toLocaleString();
+                },
+
+                getNodeMetaLine(node, chapterId) {
+                    if (!node) return '';
+                    const parentNode = node.parentNodeId ? this.getNode(chapterId, node.parentNodeId) : null;
+                    const parentLabel = parentNode ? this.getNodeDisplayName(parentNode) : 'None';
+                    const suffix = node.placeholderValue ? ` | Target: ${node.placeholderValue}` : '';
+                    return `Parent: ${parentLabel} | ${this.formatWorkflowDate(node.createdAt)}${suffix}`;
+                },
+
+                getChapterHistory(chapterId) {
+                    const nodes = Object.values(this.chapterWorkflows[chapterId]?.nodes || {});
+                    return nodes.sort((a, b) => {
+                        if (a.scope === 'source') return -1;
+                        if (b.scope === 'source') return 1;
+                        return a.createdAt - b.createdAt;
+                    });
+                },
+
+                toggleChapterHistory(chapterId) {
+                    const state = this.chapterWorkflows[chapterId];
+                    if (!state) return;
+                    state.showHistory = !state.showHistory;
+                    this.refreshIcons();
+                },
+
+                setActiveChapterNode(chapterId, nodeId) {
+                    const state = this.chapterWorkflows[chapterId];
+                    if (!state?.nodes?.[nodeId]) return;
+                    state.activeNodeId = nodeId;
+                    this.persistWorkflowState();
+                },
+
+                activateGlobalSource() {
+                    this.activeGlobalRunId = null;
+                    this.fetchedChapterIds.forEach(id => {
+                        const state = this.chapterWorkflows[id];
+                        if (state?.rootNodeId) state.activeNodeId = state.rootNodeId;
+                    });
+                    this.persistWorkflowState();
+                },
+
+                activateGlobalRun(runId) {
+                    const run = this.workflowRuns.find(item => item.id === runId);
+                    if (!run) return;
+                    this.activeGlobalRunId = runId;
+                    this.fetchedChapterIds.forEach(id => {
+                        const nodeId = run.nodeIdsByChapter?.[id];
+                        if (nodeId && this.chapterWorkflows[id]?.nodes?.[nodeId]) {
+                            this.chapterWorkflows[id].activeNodeId = nodeId;
+                        }
+                    });
+                    this.persistWorkflowState();
+                },
+
+                async rewriteSingleChapter(id) {
+                    if (!this.aiConfig.apiKey) return this.showToast('Please enter an API Key in settings', 'error');
+                    if (!this.validatePromptPlaceholder()) return;
+                    const state = this.chapterWorkflows[id];
+                    const activeNode = this.getActiveNode(id);
+                    if (!state?.sourceHtml || !activeNode) return this.showToast('Fetch the chapter first', 'error');
+
+                    const execution = this.buildPromptExecution();
+                    const branchNumber = (state.localRunCount || 0) + 1;
+                    const node = this.createWorkflowNode({
+                        chapterId: id,
+                        parentNodeId: state.activeNodeId,
+                        scope: 'chapter',
+                        promptKey: execution.promptKey,
+                        promptLabel: execution.promptLabel,
+                        promptTextResolved: execution.promptTextResolved,
+                        placeholderValue: execution.placeholderValue,
+                        branchNumber
+                    });
+
+                    state.localRunCount = branchNumber;
+                    this.addNodeToChapter(id, node, { setActive: true, setHead: true, setLastGlobal: false });
+                    this.uiState = 'rewritingChapters';
+                    this.statusMessage = 'Generating chapter 1/1...';
+                    this.setNodeState(id, node.id, {
+                        stage: 'processing',
+                        statusLabel: 'Thinking...',
+                        isStreaming: false
+                    });
+                    this.persistWorkflowState();
+                    this.$nextTick(() => this.refreshIcons());
+
+                    try {
+                        const finalHtml = await this.streamChatCompletion(id, node.id, activeNode.html, execution.promptTextResolved);
+                            this.flushNodeHtml(id, node.id);
+                            this.setNodeState(id, node.id, {
+                                html: this.purifyHtml(finalHtml || this.getNode(id, node.id)?.html || ''),
+                            isAi: true,
+                            isStreaming: false,
+                            stage: 'done',
+                            statusLabel: '',
+                            streamBuffer: '',
+                            flushScheduled: false,
+                            error: ''
+                        });
+                        this.persistWorkflowState();
+                        this.showToast('AI Enhancement complete');
+                    } catch (e) {
+                        console.error(e);
+                        this.flushNodeHtml(id, node.id);
+                        this.setNodeState(id, node.id, {
+                            isStreaming: false,
+                            stage: 'error',
+                            statusLabel: '',
+                            error: e.message
+                        });
+                        this.persistWorkflowState();
+                        this.showToast(`AI Error on Ch ${id}: ${e.message}`, 'error');
+                    } finally {
+                        this.uiState = 'idle';
+                        this.statusMessage = '';
+                        this.refreshIcons();
+                    }
+                },
+
+                async rewriteChapters() {
+                    if (!this.aiConfig.apiKey) return this.showToast('Please enter an API Key in settings', 'error');
+                    if (!this.validatePromptPlaceholder()) return;
+                    
+                    this.uiState = 'rewritingChapters';
+                    const ids = this.fetchedChapterIds;
+                    if (!ids.length) {
+                        this.uiState = 'idle';
+                        return this.showToast('Fetch chapters first', 'error');
+                    }
+
+                    const execution = this.buildPromptExecution();
+                    const run = {
+                        id: this.newWorkflowId('run'),
+                        number: this.workflowRuns.length + 1,
+                        createdAt: Date.now(),
+                        parentRunId: this.activeGlobalRunId,
+                        promptKey: execution.promptKey,
+                        promptLabel: execution.promptLabel,
+                        promptTextResolved: execution.promptTextResolved,
+                        placeholderValue: execution.placeholderValue,
+                        chapterIds: [...ids],
+                        nodeIdsByChapter: {}
+                    };
+                    let count = 0;
+
+                    ids.forEach((id, index) => {
+                        const state = this.chapterWorkflows[id];
+                        const parentNodeId = state?.lastGlobalNodeId || state?.rootNodeId || null;
+                        const node = this.createWorkflowNode({
+                            chapterId: id,
+                            parentNodeId,
+                            scope: 'global',
+                            promptKey: execution.promptKey,
+                            promptLabel: execution.promptLabel,
+                            promptTextResolved: execution.promptTextResolved,
+                            placeholderValue: execution.placeholderValue,
+                            runId: run.id
+                        });
+                        this.addNodeToChapter(id, node, { setActive: true, setHead: true, setLastGlobal: true });
+                        this.setNodeState(id, node.id, {
+                            stage: 'queued',
+                            statusLabel: `Waiting ${index + 1}/${ids.length}`,
+                            isStreaming: false
+                        });
+                        run.nodeIdsByChapter[id] = node.id;
+                    });
+
+                    this.workflowRuns = [...this.workflowRuns, run];
+                    this.activeGlobalRunId = run.id;
+                    this.persistWorkflowState();
+                    this.refreshIcons();
+
+                    for (const id of ids) {
+                        count++;
+                        this.statusMessage = `Generating chapter ${count}/${ids.length}...`;
+                        try {
+                            const nodeId = run.nodeIdsByChapter[id];
+                            const parentNode = this.getNode(id, this.getNode(id, nodeId)?.parentNodeId);
+                            this.setNodeState(id, nodeId, {
+                                isAi: true,
+                                isStreaming: false,
+                                stage: 'processing',
+                                statusLabel: `Thinking ${count}/${ids.length}`
+                            });
+                            this.$nextTick(() => this.refreshIcons());
+
+                            const finalHtml = await this.streamChatCompletion(id, nodeId, parentNode?.html || this.chapterWorkflows[id]?.sourceHtml || '', execution.promptTextResolved);
+                            this.flushNodeHtml(id, nodeId);
+                            this.setNodeState(id, nodeId, {
+                                html: this.purifyHtml(finalHtml || this.getNode(id, nodeId)?.html || ''),
+                                isAi: true,
+                                isStreaming: false,
+                                stage: 'done',
+                                statusLabel: '',
+                                streamBuffer: '',
+                                flushScheduled: false,
+                                error: ''
+                            });
+                            this.persistWorkflowState();
+                        } catch (e) { 
+                            console.error(e);
+                            const nodeId = run.nodeIdsByChapter[id];
+                            this.flushNodeHtml(id, nodeId);
+                            this.setNodeState(id, nodeId, {
+                                isStreaming: false,
+                                stage: 'error',
+                                statusLabel: '',
+                                error: e.message
+                            });
+                            this.persistWorkflowState();
+                            this.showToast(`AI Error on Ch ${id}: ${e.message}`, 'error');
+                        }
+                    }
+                    this.uiState = 'idle';
+                    this.statusMessage = '';
+                    this.refreshIcons();
+                    this.showToast('AI Enhancement complete');
+                },
+
+                generateMarkdown() {
+                    let md = `# ${this.storyData.story.title}\n`;
+                    md += `By ${this.storyData.author.name}\n\n`;
+                    const description = (this.storyData.story.description || '')
+                        .split('\n')
+                        .map(line => `> ${line}`)
+                        .join('\n');
+                    md += `${description}\n\n---\n\n`;
+                    
+                    this.storyData.chapters.forEach(part => {
+                        const id = String(part.id);
+                        const html = this.getActiveNode(id)?.html;
+                        if (html) {
+                            md += `## ${part.title}\n\n${this.turndown.turndown(html)}\n\n---\n\n`;
+                        }
+                    });
+                    return md;
+                },
+
+                generateMetadataJson() {
+                    return JSON.stringify(this.storyData, null, 2);
+                },
+
+                exportState() {
+                    const state = {
+                        version: 1,
+                        exportedAt: Date.now(),
+                        theme: localStorage.getItem('theme') || '',
+                        aiConfig: (() => { try { return JSON.parse(localStorage.getItem('wattpad_config') || '{}'); } catch { return {}; } })(),
+                        workflowKeys: Object.keys(localStorage).filter(k => k.startsWith('wattpad_workflow_')).reduce((acc, key) => {
+                            try { acc[key] = JSON.parse(localStorage.getItem(key)); } catch {}
+                            return acc;
+                        }, {}),
+                        storyData: this.storyData,
+                        selectedIds: this.selectedIds,
+                        selectedPromptKey: this.selectedPromptKey,
+                        promptPlaceholderInput: this.promptPlaceholderInput,
+                        selectedPromptPlaceholderPreset: this.selectedPromptPlaceholderPreset
+                    };
+                    const json = JSON.stringify(state, null, 2);
+                    const blob = new Blob([json], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `wattpad-pro-state-${new Date().toISOString().slice(0,10)}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    this.showToast('State exported successfully');
+                },
+
+                importStateTrigger() {
+                    this.$refs.importFileInput.value = '';
+                    this.$refs.importFileInput.click();
+                },
+
+                importStateFile(event) {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = async (e) => {
+                        try {
+                            const state = JSON.parse(e.target.result);
+                            if (!state.version) throw new Error('Invalid state file');
+
+                            if (state.theme) {
+                                localStorage.setItem('theme', state.theme);
+                            }
+                            if (state.aiConfig && Object.keys(state.aiConfig).length) {
+                                localStorage.setItem('wattpad_config', JSON.stringify(state.aiConfig));
+                                this.aiConfig = { ...this.aiConfig, ...state.aiConfig };
+                            }
+                            if (state.workflowKeys) {
+                                Object.entries(state.workflowKeys).forEach(([key, value]) => {
+                                    localStorage.setItem(key, JSON.stringify(value));
+                                });
+                            }
+                            if (state.storyData) {
+                                this.storyData = state.storyData;
+                                this.restoreWorkflowState();
+                            }
+                            if (state.selectedIds) this.selectedIds = state.selectedIds;
+                            if (state.selectedPromptKey) this.selectedPromptKey = state.selectedPromptKey;
+                            if (state.promptPlaceholderInput !== undefined) this.promptPlaceholderInput = state.promptPlaceholderInput;
+                            if (state.selectedPromptPlaceholderPreset) this.selectedPromptPlaceholderPreset = state.selectedPromptPlaceholderPreset;
+
+                            this.showToast('State imported successfully');
+                        } catch (err) {
+                            this.showToast('Failed to import: ' + err.message, 'error');
+                        }
+                    };
+                    reader.readAsText(file);
+                },
+
+                async copyMarkdown() {
+                    if (!this.storyData) return this.showToast('Load a story first', 'error');
+                    const md = this.generateMarkdown();
+                    await navigator.clipboard.writeText(md);
+                    this.showToast('Markdown copied to clipboard!');
+                },
+
+                downloadMarkdown() {
+                    if (!this.storyData) return this.showToast('Load a story first', 'error');
+                    const md = this.generateMarkdown();
+                    const blob = new Blob([md], { type: 'text/markdown' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${this.storyData.story.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    this.showToast('Download started');
+                },
+
+                deleteWorkflowRun(runId) {
+                    this.workflowRuns = this.workflowRuns.filter(run => run.id !== runId);
+                    if (this.activeGlobalRunId === runId) {
+                        this.activateGlobalSource();
+                    }
+                    this.fetchedChapterIds.forEach(id => {
+                        const state = this.chapterWorkflows[id];
+                        if (!state) return;
+                        Object.keys(state.nodes).forEach(nodeId => {
+                            const node = state.nodes[nodeId];
+                            if (node.runId === runId) {
+                                delete state.nodes[nodeId];
+                            }
+                        });
+                        const remainingNodes = Object.values(state.nodes);
+                        if (remainingNodes.length) {
+                            const sorted = remainingNodes.sort((a, b) => a.createdAt - b.createdAt);
+                            state.rootNodeId = sorted[0].id;
+                            state.headNodeId = sorted[sorted.length - 1].id;
+                            if (state.activeNodeId === runId || !state.nodes[state.activeNodeId]) {
+                                state.activeNodeId = state.headNodeId;
+                            }
+                            const lastGlobal = sorted.filter(n => n.scope === 'global').pop();
+                            state.lastGlobalNodeId = lastGlobal?.id || state.rootNodeId;
+                        }
+                    });
+                    this.persistWorkflowState();
+                    this.refreshIcons();
+                    this.showToast('Thread deleted');
+                },
+
+                deleteChapterWorkflowNode(chapterId, nodeId) {
+                    const state = this.chapterWorkflows[chapterId];
+                    if (!state?.nodes?.[nodeId]) return;
+                    if (state.nodes[nodeId].scope === 'source') return;
+
+                    delete state.nodes[nodeId];
+                    const remainingNodes = Object.values(state.nodes);
+                    if (!remainingNodes.length) {
+                        delete this.chapterWorkflows[chapterId];
+                        this.showToast('Node deleted');
+                        this.persistWorkflowState();
+                        this.refreshIcons();
+                        return;
+                    }
+
+                    const sorted = remainingNodes.sort((a, b) => a.createdAt - b.createdAt);
+                    if (state.rootNodeId === nodeId || !state.nodes[state.rootNodeId]) {
+                        state.rootNodeId = sorted[0].id;
+                    }
+                    if (state.activeNodeId === nodeId || !state.nodes[state.activeNodeId]) {
+                        state.activeNodeId = sorted[sorted.length - 1].id;
+                    }
+                    if (state.headNodeId === nodeId || !state.nodes[state.headNodeId]) {
+                        state.headNodeId = sorted[sorted.length - 1].id;
+                    }
+                    if (state.lastGlobalNodeId === nodeId || !state.nodes[state.lastGlobalNodeId]) {
+                        const lastGlobal = sorted.filter(n => n.scope === 'global').pop();
+                        state.lastGlobalNodeId = lastGlobal?.id || state.rootNodeId;
+                    }
+
+                    const deletedRunIds = new Set();
+                    const runId = state.nodes[nodeId]?.runId;
+                    if (runId) deletedRunIds.add(runId);
+
+                    this.persistWorkflowState();
+                    this.refreshIcons();
+                    this.showToast('Node deleted');
+                }
+            };
+        }
+
+        // --- THE PARSER (Minified Logic) ---
+        function extractAllWattpadStoryData(htmlString) {
+            const regex = /window\.__remixContext\s*=\s*(\{.*?\});<\/script>/s;
+            const match = htmlString.match(regex);
+            if (!match || !match[1]) throw new Error("Could not find internal story data.");
+            const remixData = JSON.parse(match[1]);
+            const rootData = remixData.state.loaderData.root;
+            const storyPageData = remixData.state.loaderData["routes/story.$storyid"];
+            const storyData = storyPageData.story;
+            const categoryDictionary = rootData.wattpad.categoryList || {};
+            const resolvedCategories = (storyData.categories || []).map(id => ({
+                id,
+                name: categoryDictionary[id] || `Unknown (${id})`
+            }));
+
+            return {
+                story: {
+                    id: storyData.id,
+                    title: storyData.title,
+                    url: storyData.url,
+                    description: storyData.description,
+                    cover: storyData.cover,
+                    coverTimestamp: storyData.cover_timestamp,
+                    language: storyData.language || null,
+                    categories: resolvedCategories,
+                    tags: storyData.tags || [],
+                    storyTags: storyData.storyTags || [],
+                    badges: storyData.badges || [],
+                    copyright: storyData.copyright,
+                    rating: storyData.rating,
+                    completed: storyData.completed,
+                    draft: storyData.draft,
+                    deleted: storyData.deleted,
+                    partOfSeries: storyData.isPartOfSeries,
+                    hasBonusParts: storyData.hasBonusParts,
+                    newParts: storyData.numNewParts,
+                    newBonusParts: storyData.numNewBonusParts,
+                    createdAt: storyData.createDate,
+                    formattedCreatedAt: storyData.formattedCreateDate,
+                    modifiedAt: storyData.modifyDate,
+                    firstPartId: storyData.firstPartId || null,
+                    firstPublishedPart: storyData.firstPublishedPart || null,
+                    lastPublishedPart: storyData.lastPublishedPart || null,
+                    reportUrl: storyData.storyReportUrl,
+                    translateUrl: storyData.storyTranslateUrl,
+                    tagRankings: storyData.tagRankings || [],
+                    noIndex: storyData.noIndex
+                },
+                author: {
+                    id: storyData.author,
+                    username: storyData.user?.username || null,
+                    name: storyData.user?.name || null,
+                    avatar: storyData.user?.avatar || null,
+                    followers: storyData.user?.numFollowers ?? null
+                },
+                stats: {
+                    reads: storyData.readCount,
+                    votes: storyData.voteCount,
+                    comments: storyData.commentCount,
+                    parts: storyData.numParts,
+                    words: storyData.length
+                },
+                moderation: {
+                    mature: storyData.mature,
+                    brandSafetyLevel: storyData.brandSafetyLevel,
+                    brandSafetySource: storyData.brandSafetySource,
+                    brandSafe: storyData.isBrandSafe,
+                    imagesUnderModeration: storyData.imagesUnderModeration,
+                    safeFor: storyData.safe_for,
+                    readerBrowseEligibility: storyData.readerBrowseEligibility,
+                    writerPreviewHasBannedCover: storyData.writerPreviewHasBannedCover
+                },
+                monetization: {
+                    adExempt: storyData.isAdExempt,
+                    paidPreview: storyData.isPaidPreview,
+                    paywalled: storyData.isPaywalled,
+                    paidModel: storyData.paidModel
+                },
+                chapters: (storyData.parts || []).map(part => ({
+                    id: part.id,
+                    title: part.title,
+                    url: part.url,
+                    length: part.length,
+                    createdAt: part.createDate,
+                    formattedCreatedAt: part.formattedCreateDate,
+                    draft: part.draft,
+                    isNew: part.isNew
+                }))
+            };
+        }
+        
+        function themeHandler() {
+            return {
+                isDark: localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches),
+                toggleTheme() {
+                    this.isDark = !this.isDark;
+                    localStorage.setItem('theme', this.isDark ? 'dark' : 'light');
+                }
+            }
+        }
+    </script>
+</body>
+</html>
